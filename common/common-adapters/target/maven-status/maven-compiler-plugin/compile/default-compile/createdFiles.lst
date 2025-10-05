@@ -1,0 +1,8 @@
+com\souk\common\adapters\jpa\ProductJpaAdapter.class
+com\souk\common\adapters\redis\RedisCacheAdapter.class
+com\souk\common\adapters\es\ElasticSearchAdapter.class
+com\souk\common\adapters\redis\RedisCacheAdapter$Serde.class
+com\souk\common\adapters\es\ElasticSearchAdapter$Mapper.class
+com\souk\common\adapters\jpa\JpaDataAccessAdapter.class
+com\souk\common\adapters\jpa\repository\ProductRepository.class
+com\souk\common\adapters\redis\RedisCacheAdapter$Keyer.class

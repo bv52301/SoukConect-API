@@ -1,0 +1,5 @@
+com\souk\common\ApiError.class
+com\souk\common\domain\Product.class
+com\souk\common\port\CachePort.class
+com\souk\common\port\DataAccessPort.class
+com\souk\common\port\SearchPort.class
