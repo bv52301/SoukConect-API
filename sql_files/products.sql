@@ -24,9 +24,9 @@ CREATE TABLE `products` (
   */
   `price` decimal(10,2) NOT NULL,
   `is_available` tinyint(1) NOT NULL DEFAULT 1,
-  `schedule` longtext CHARACTER SET utf8mb4 COLLATE,
+  `schedule` longtext CHARACTER SET utf8mb4 ,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `schedule_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `schedule_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   /*
 	  {
 	   ""weekly_schedules"": [
