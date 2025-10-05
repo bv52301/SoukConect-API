@@ -9,7 +9,7 @@ CREATE TABLE `products` (
   `sku` varchar(64) NOT NULL,
   `name` varchar(255) NOT NULL,
   `vendor_id` bigint(20) NOT NULL,
-  `category_details` longtext CHARACTER SET utf8mb4,
+  `category_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
     /*
 	  {
 	 Cuisinename : "Asia",
