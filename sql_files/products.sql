@@ -6,74 +6,74 @@
 --
 CREATE TABLE `products` (
   `product_id` bigint(20) PRIMARY KEY AUTO_INCREMENT,
-  `sku` varchar(64) NOT NULL,
+  `sku` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
   `vendor_id` bigint(20) NOT NULL,
-  `category_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  `category_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
     /*
-	  {
-	 Cuisinename : "Asia",
-	 Category : "Indian",
-	 SubCategory : "SouthIndian",
-	 regionCategory : "TN",
-	  }
+	 "categoryDetails": {
+		"Cuisinename": "Asia",
+		"Category": "Indian",
+		"SubCategory": "SouthIndian",
+		"regionCategory": "TN"
+	}
   */
-  `product_image` longtext CHARACTER SET utf8mb4,
+  `product_image` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
   /*
 	{ "images" : [ "url1","url2"] }
   */
   `price` decimal(10,2) NOT NULL,
   `is_available` tinyint(1) NOT NULL DEFAULT 1,
-  `schedule` longtext CHARACTER SET utf8mb4 ,
+  `schedule` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
+  /*
+	{
+		"weekly_schedules": [
+			{
+				"day_of_week": [
+					"Mon",
+					"Tue",
+					"Wed"
+				],
+				"start": "09:00",
+				"end": "17:00",
+				"stock": 100,
+				"tz": "Asia/Singapore"
+			},
+			{
+				"day_of_week": [
+					"Fri"
+				],
+				"start": "09:00",
+				"end": "20:00",
+				"stock": 100,
+				"tz": "Asia/Singapore"
+			}
+		],
+		"dates": [
+			{
+				"date": "2025-12-24",
+				"start": "10:00",
+				"end": "14:00",
+				"stock": 100,
+				"tz": "Asia/Singapore"
+			},
+			{
+				"date": "2025-12-25",
+				"start": "10:00",
+				"end": "14:00",
+				"stock": 100,
+				"tz": "Asia/Singapore"
+			}
+		],
+		"blackout": [
+			"2025-12-26",
+			"2025-12-27",
+			"2025-12-28"
+		]
+	}
+  */
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `schedule_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  /*
-	  {
-	   ""weekly_schedules"": [
-		{
-		 ""day_of_week"": [
-		  ""Mon"",
-		  ""Tue"",
-		  ""Wed""
-		 ],
-		 ""start"": ""09:00"",
-		 ""end"": ""17:00"",
-		 ""stock"" : 100
-		 ""tz"": ""Asia/Singapore""
-		},
-		{
-		 ""day_of_week"": [
-		  ""Fri""
-		 ],
-		 ""start"": ""09:00"",
-		 ""end"": ""20:00"",
-		 ""stock"" : 100,
-		 ""tz"": ""Asia/Singapore""
-		}
-	   ],
-	   ""dates"": [
-		{
-		 ""date"": ""2025-12-24"",
-		 ""start"": ""10:00"",
-		 ""end"": ""14:00"",
-		 ""stock"" : 100
-		 ""tz"": ""Asia/Singapore""
-		},
-		{
-		 ""date"": ""2025-12-25"",
-		 ""start"": ""10:00"",
-		 ""end"": ""14:00"",
-		 ""stock"" : 100
-		 ""tz"": ""Asia/Singapore""
-		}
-	   ],
-	   ""blackout"": [
-		""2025-12-26"",
-		""2025-12-27"",
-		""2025-12-28""
-	   ]
-	 }
-  */
   CONSTRAINT uq_product_sku UNIQUE (sku),
   CONSTRAINT chk_category_details_json_valid CHECK (JSON_VALID(category_details)),
   CONSTRAINT chk_product_image_json_valid     CHECK (product_image IS NULL OR JSON_VALID(product_image)),

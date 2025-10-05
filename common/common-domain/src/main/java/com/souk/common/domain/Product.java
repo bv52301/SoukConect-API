@@ -37,16 +37,17 @@ public class Product {
     private Boolean available;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "category_details", columnDefinition = "json", nullable = false)
+    @Column(name = "category_details", columnDefinition = "json")
 
     private JsonNode categoryDetails;
 
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "product_image")
-    private String productImage;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "product_image", columnDefinition = "json")
+    private JsonNode productImage;
 
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    private String schedule;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "schedule", columnDefinition = "json")
+    private JsonNode schedule;
 
     @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
@@ -74,14 +75,14 @@ public class Product {
     public Boolean getAvailable() { return available; }
     public void setAvailable(Boolean available) { this.available = available; }
 
-    public String getCategoryDetails() { return categoryDetails; }
-    public void setCategoryDetails(String categoryDetails) { this.categoryDetails = categoryDetails; }
+    public JsonNode getCategoryDetails() { return categoryDetails; }
+    public void setCategoryDetails(JsonNode categoryDetails) { this.categoryDetails = categoryDetails; }
 
-    public String getProductImage() { return productImage; }
-    public void setProductImage(String productImage) { this.productImage = productImage; }
+    public JsonNode getProductImage() { return productImage; }
+    public void setProductImage(JsonNode productImage) { this.productImage = productImage; }
 
-    public String getSchedule() { return schedule; }
-    public void setSchedule(String schedule) { this.schedule = schedule; }
+    public JsonNode getSchedule() { return schedule; }
+    public void setSchedule(JsonNode schedule) { this.schedule = schedule; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getScheduleUpdated() { return scheduleUpdated; }

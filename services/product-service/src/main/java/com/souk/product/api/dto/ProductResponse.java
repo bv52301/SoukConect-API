@@ -1,6 +1,7 @@
 package com.souk.product.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Product;
 
 import java.math.BigDecimal;
@@ -14,9 +15,9 @@ public record ProductResponse(
         String sku,
         Long vendorId,
         Boolean available,
-        String categoryDetails,
-        String productImage,
-        String schedule,
+        JsonNode categoryDetails,
+        JsonNode productImage,
+        JsonNode schedule,
         LocalDateTime createdAt,
         LocalDateTime scheduleUpdated
 ) {
