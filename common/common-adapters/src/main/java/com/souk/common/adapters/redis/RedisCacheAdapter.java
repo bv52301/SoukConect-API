@@ -4,10 +4,13 @@ package com.souk.common.adapters.redis;
 import com.souk.common.port.CachePort;
 import java.time.Duration;
 import java.util.Optional;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(value = "rediscache.enabled", havingValue = "true", matchIfMissing=false)
 public class RedisCacheAdapter<T, ID> implements CachePort<T, ID> {
     public interface Serde<T> { String toJson(T v); T fromJson(String s); }
     public interface Keyer<ID> { String key(ID id); }

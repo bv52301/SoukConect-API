@@ -2,11 +2,13 @@
 package com.souk.common.adapters.es;
 
 import com.souk.common.port.SearchPort;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
+@ConditionalOnProperty(value = "elasticsearch.enabled", havingValue = "true", matchIfMissing=false)
 public class ElasticSearchAdapter<T> implements SearchPort<T> {
     public interface Mapper<T> { T fromHit(Object hit); }
     private final Object esClient; // your client type

@@ -7,8 +7,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+
 
 
 
@@ -36,7 +35,7 @@ public class Product {
     @Column(name = "is_available", nullable = false)
     private Boolean available;
 
-    @JdbcTypeCode(SQLTypes.JSON)
+
     @Column(name = "category_details", columnDefinition = "json", nullable = false)
 
     private String categoryDetails;
