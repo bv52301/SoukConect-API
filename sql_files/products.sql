@@ -1,16 +1,15 @@
--- Database: `soukconnect`
+-- Default Database: `soukconnect`
 --
 -- --------------------------------------------------------
 --
 -- Table structure for table `products`
 --
-
 CREATE TABLE `products` (
   `product_id` bigint(20) PRIMARY KEY NOT NULL,
   `sku` varchar(64) NOT NULL,
   `name` varchar(255) NOT NULL,
   `vendor_id` bigint(20) NOT NULL,
-  `category_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`category_details`)),
+  `category_details` longtext CHARACTER SET utf8mb4,
     /*
 	  {
 	 Cuisinename : "Asia",
@@ -19,13 +18,13 @@ CREATE TABLE `products` (
 	 regionCategory : "TN",
 	  }
   */
-  `product_image` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`product_image`)),
+  `product_image` longtext CHARACTER SET utf8mb4,
   /*
 	{ "images" : [ "url1","url2"] }
   */
   `price` decimal(10,2) NOT NULL,
   `is_available` tinyint(1) NOT NULL DEFAULT 1,
-  `schedule` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`schedule`)),
+  `schedule` longtext CHARACTER SET utf8mb4 COLLATE,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `schedule_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
   /*
@@ -106,4 +105,3 @@ CREATE TABLE `products` (
     ON UPDATE CASCADE
     ON DELETE RESTRICT
 );
-
