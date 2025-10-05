@@ -1,6 +1,7 @@
 package com.souk.common.domain;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,10 +36,10 @@ public class Product {
     @Column(name = "is_available", nullable = false)
     private Boolean available;
 
-
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "category_details", columnDefinition = "json", nullable = false)
 
-    private String categoryDetails;
+    private JsonNode categoryDetails;
 
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "product_image")

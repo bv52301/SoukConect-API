@@ -5,7 +5,7 @@
 -- Table structure for table `products`
 --
 CREATE TABLE `products` (
-  `product_id` bigint(20) PRIMARY KEY NOT NULL,
+  `product_id` bigint(20) PRIMARY KEY AUTO_INCREMENT,
   `sku` varchar(64) NOT NULL,
   `name` varchar(255) NOT NULL,
   `vendor_id` bigint(20) NOT NULL,
