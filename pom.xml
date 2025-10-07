@@ -29,6 +29,7 @@
         <module>common/common-domain</module>
         <module>services/product-service</module>
         <module>services/vendor-service</module>
+        <module>services/common-service</module>
     </modules>
 
     <build>
