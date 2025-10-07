@@ -1,16 +1,33 @@
 server:
-  port: 8082   # Vendor service runs on 8082
+  port: 8080
+
+persistence:
+  type: jpa   # your config-driven switch (use "redis" when you swap)
 
 spring:
   application:
-    name: vendor-service
+    vendor-service
+  flyway:
+    enabled: false
   datasource:
-    url: jdbc:mysql://localhost:3306/vendorsdb
+    url: jdbc:mariadb://localhost:3306/soukconect
     username: root
-    password: root
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    password:
+    driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      #ddl-auto: validate   # change to 'update' if you want Hibernate to create/alter tables
+      ddl-auto: update   # change to 'update' if you want Hibernate to create/alter tables
     show-sql: true
-    database-platform: org.hibernate.dialect.MySQLDialect
+
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MariaDBDialect
+    open-in-view: false
+
+# Optional SQL logging while debugging
+logging:
+  level:
+    org.hibernate.SQL: info
+    org.hibernate.type.descriptor.sql.BasicBinder: warn

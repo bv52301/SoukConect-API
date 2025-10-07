@@ -1,5 +1,0 @@
-com\souk\product\api\dto\ProductResponse.class
-com\souk\product\api\dto\ProductCreateRequest.class
-com\souk\product\api\dto\ProductUpdateRequest.class
-com\souk\product\ProductServiceApplication.class
-com\souk\product\api\ProductController.class
