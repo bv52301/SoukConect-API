@@ -1,4 +1,11 @@
 # Maven / Gradle build outputs
+*.class
+
+# Ignore packaged files
+*.jar
+*.war
+*.ear
+
 target/
 build/
 out/
@@ -8,6 +15,11 @@ out/
 .vscode/
 *.iml
 
-# OS files
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# Ignore OS files
 .DS_Store
 Thumbs.db
