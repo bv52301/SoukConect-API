@@ -1,16 +1,12 @@
 package com.souk.common.domain;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-
-
-
-
 
 @Entity
 @Table(name = "products")
@@ -38,12 +34,7 @@ public class Product {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "category_details", columnDefinition = "json")
-
     private JsonNode categoryDetails;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "product_image", columnDefinition = "json")
-    private JsonNode productImage;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "schedule", columnDefinition = "json")
@@ -54,6 +45,10 @@ public class Product {
 
     @Column(name = "schedule_updated", insertable = false, updatable = false)
     private LocalDateTime scheduleUpdated;
+
+    // --- Relation to ProductImage ---
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductImage> images;
 
     // --- Getters & Setters ---
 
@@ -78,12 +73,12 @@ public class Product {
     public JsonNode getCategoryDetails() { return categoryDetails; }
     public void setCategoryDetails(JsonNode categoryDetails) { this.categoryDetails = categoryDetails; }
 
-    public JsonNode getProductImage() { return productImage; }
-    public void setProductImage(JsonNode productImage) { this.productImage = productImage; }
-
     public JsonNode getSchedule() { return schedule; }
     public void setSchedule(JsonNode schedule) { this.schedule = schedule; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getScheduleUpdated() { return scheduleUpdated; }
+
+    public List<ProductImage> getImages() { return images; }
+    public void setImages(List<ProductImage> images) { this.images = images; }
 }
