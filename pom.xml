@@ -22,6 +22,12 @@
     <properties>
         <java.version>17</java.version>
     </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+    </dependencies>
 
     <!-- Register child modules here -->
     <modules>
@@ -29,7 +35,8 @@
         <module>common/common-domain</module>
         <module>services/product-service</module>
         <module>services/vendor-service</module>
-        <module>services/common-service</module>
+        <module>services/combined-service</module>
+        <module>services/customer-service</module>
     </modules>
 
     <build>

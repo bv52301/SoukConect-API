@@ -12,7 +12,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>common-service</artifactId>
+    <artifactId>combined-service</artifactId>
     <packaging>jar</packaging>
     <name>combined-service</name>
 

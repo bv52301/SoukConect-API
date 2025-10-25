@@ -9,33 +9,33 @@
         <groupId>com.souk</groupId>
         <artifactId>soukconect-api</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>product-service</artifactId>
-    <name>product-service</name>
+    <artifactId>customer-service</artifactId>
     <packaging>jar</packaging>
+    <name>customer-service</name>
 
     <dependencies>
-        <!-- Spring Boot Web -->
+        <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA -->
+        <!-- Data + JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- MariaDB Driver -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Common domain + adapters -->
+        <!-- Common shared domain -->
         <dependency>
             <groupId>com.souk</groupId>
             <artifactId>common-domain</artifactId>
@@ -48,14 +48,14 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Swagger/OpenAPI -->
+        <!-- OpenAPI Swagger -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.6.0</version>
         </dependency>
 
-        <!-- Test dependencies -->
+        <!-- For tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -68,6 +68,14 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.5.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
