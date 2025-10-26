@@ -19,4 +19,3 @@ CREATE TABLE customer_addresses (
 );
 
 CREATE INDEX idx_customer_address_customer ON customer_addresses (customer_id);
-CREATE INDEX idx_customer_address_default ON customer_addresses (is_default);
