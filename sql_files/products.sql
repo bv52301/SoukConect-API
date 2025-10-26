@@ -18,11 +18,7 @@ CREATE TABLE `products` (
 		"regionCategory": "TN"
 	}
   */
-  `product_image` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
-  /*
-	{ "images" : [ "url1","url2"] }
-  */
-  `price` decimal(10,2) NOT NULL,
+   `price` decimal(10,2) NOT NULL,
   `is_available` tinyint(1) NOT NULL DEFAULT 1,
   `schedule` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin,
   /*
@@ -76,7 +72,6 @@ CREATE TABLE `products` (
   `schedule_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   CONSTRAINT uq_product_sku UNIQUE (sku),
   CONSTRAINT chk_category_details_json_valid CHECK (JSON_VALID(category_details)),
-  CONSTRAINT chk_product_image_json_valid     CHECK (product_image IS NULL OR JSON_VALID(product_image)),
   CONSTRAINT chk_schedule_json_valid          CHECK (JSON_VALID(schedule)),
 
   -- Minimal expected shape for category_details
@@ -85,13 +80,6 @@ CREATE TABLE `products` (
       '$.Cuisinename', '$.Category', '$.SubCategory', '$.regionCategory'
     )
   ),
-  -- If you always expect product_image = {""""images"""":[...]} and that it's an array:
-  CONSTRAINT chk_product_images_array CHECK (
-    product_image IS NULL
-    OR JSON_CONTAINS_PATH(product_image, 'one', '$.images')
-       AND JSON_TYPE(JSON_EXTRACT(product_image,'$.images')) = 'ARRAY'
-  ),
-
   -- Optional minimal shape for schedule:
   -- must have one of weekly_schedules/dates/blackout
   CONSTRAINT chk_schedule_has_any CHECK (
