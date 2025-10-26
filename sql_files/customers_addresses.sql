@@ -15,7 +15,8 @@ CREATE TABLE customer_addresses (
   CONSTRAINT fk_customer_address_customer FOREIGN KEY (customer_id)
     REFERENCES customers(customer_id)
     ON DELETE CASCADE
-    ON UPDATE CASCADE
-);
+    ON UPDATE CASCADE,
 
-CREATE INDEX idx_customer_address_customer ON customer_addresses (customer_id);
+  INDEX idx_customer_address_customer (customer_id),
+  INDEX idx_customer_address_default (is_default)
+);

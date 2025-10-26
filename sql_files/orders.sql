@@ -8,11 +8,10 @@ CREATE TABLE orders (
          DEFAULT 'PENDING',
   payment_method ENUM('CASH','CARD','WALLET','BANK_TRANSFER','PAYNOW','OTHERS') DEFAULT 'CARD',
 
-  -- Delivery preference
   requested_delivery_date DATE NULL,
   delivery_flexibility ENUM('STRICT','FLEXIBLE') DEFAULT 'FLEXIBLE',
-  delivery_slot_start TIME NULL,   -- e.g., 12:00:00
-  delivery_slot_end TIME NULL,     -- e.g., 14:00:00
+  delivery_slot_start TIME NULL,
+  delivery_slot_end TIME NULL,
 
   notes TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -20,13 +19,15 @@ CREATE TABLE orders (
 
   CONSTRAINT fk_order_customer FOREIGN KEY (customer_id)
     REFERENCES customers(customer_id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
 
   CONSTRAINT fk_order_address FOREIGN KEY (address_id)
     REFERENCES customer_addresses(address_id)
-    ON DELETE SET NULL ON UPDATE CASCADE
-);
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
 
-CREATE INDEX idx_orders_customer   ON orders(customer_id);
-CREATE INDEX idx_orders_status     ON orders(status);
-CREATE INDEX idx_orders_created_at ON orders(created_at);
+  INDEX idx_orders_customer   (customer_id),
+  INDEX idx_orders_status     (status),
+  INDEX idx_orders_created_at (created_at)
+);

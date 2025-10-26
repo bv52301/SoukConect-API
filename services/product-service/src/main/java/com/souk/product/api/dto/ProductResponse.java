@@ -1,8 +1,8 @@
 package com.souk.product.api.dto;
 
-import com.souk.common.domain.Product;
-import com.souk.common.domain.ProductImage;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.souk.common.domain.Product;
+import com.souk.common.domain.ProductMedia;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,14 +17,14 @@ public record ProductResponse(
         Boolean available,
         Object categoryDetails,
         Object schedule,
-        List<ImageResponse> images
+        List<MediaResponse> media
 ) {
     public static ProductResponse from(Product product) {
-        List<ImageResponse> imageResponses = null;
+        List<MediaResponse> mediaResponses = null;
 
-        if (product.getImages() != null && !product.getImages().isEmpty()) {
-            imageResponses = product.getImages().stream()
-                    .map(ImageResponse::from)
+        if (product.getMedia() != null && !product.getMedia().isEmpty()) {
+            mediaResponses = product.getMedia().stream()
+                    .map(MediaResponse::from)
                     .toList();
         }
 
@@ -37,30 +37,40 @@ public record ProductResponse(
                 product.getAvailable(),
                 product.getCategoryDetails(),
                 product.getSchedule(),
-                imageResponses
+                mediaResponses
         );
     }
 
-    public record ImageResponse(
+    public record MediaResponse(
             Long id,
+            String mediaType,
             String url,
+            String description,
             String mimeType,
             Integer width,
             Integer height,
             Integer sizeKb,
+            Integer durationSeconds,
+            String resolution,
             String storageProvider,
-            String validationStatus
+            String validationStatus,
+            String validationError
     ) {
-        public static ImageResponse from(ProductImage img) {
-            return new ImageResponse(
-                    img.getId(),
-                    img.getImageUrl(),
-                    img.getMimeType(),
-                    img.getWidth(),
-                    img.getHeight(),
-                    img.getSizeKb(),
-                    img.getStorageProvider() != null ? img.getStorageProvider().name() : null,
-                    img.getValidationStatus() != null ? img.getValidationStatus().name() : null
+        public static MediaResponse from(ProductMedia media) {
+            return new MediaResponse(
+                    media.getId(),
+                    media.getMediaType() != null ? media.getMediaType().name() : null,
+                    media.getMediaUrl(),
+                    media.getDescription(),
+                    media.getMimeType(),
+                    media.getWidth(),
+                    media.getHeight(),
+                    media.getSizeKb(),
+                    media.getDurationSeconds(),
+                    media.getResolution(),
+                    media.getStorageProvider() != null ? media.getStorageProvider().name() : null,
+                    media.getValidationStatus() != null ? media.getValidationStatus().name() : null,
+                    media.getValidationError()
             );
         }
     }

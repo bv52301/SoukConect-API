@@ -46,9 +46,9 @@ public class Product {
     @Column(name = "schedule_updated", insertable = false, updatable = false)
     private LocalDateTime scheduleUpdated;
 
-    // --- Relation to ProductImage ---
+    // --- Relation to ProductMedia ---
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ProductImage> images;
+    private List<ProductMedia> media;
 
     // --- Getters & Setters ---
 
@@ -79,6 +79,6 @@ public class Product {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getScheduleUpdated() { return scheduleUpdated; }
 
-    public List<ProductImage> getImages() { return images; }
-    public void setImages(List<ProductImage> images) { this.images = images; }
+    public List<ProductMedia> getMedia() { return media; }
+    public void setMedia(List<ProductMedia> media) { this.media = media; }
 }

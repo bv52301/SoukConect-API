@@ -1,9 +1,9 @@
 package com.souk.product.api;
 
 import com.souk.common.domain.Product;
-import com.souk.common.domain.ProductImage;
-import com.souk.common.domain.ProductImage.ValidationStatus;
-import com.souk.common.domain.ProductImage.StorageProvider;
+import com.souk.common.domain.ProductMedia;
+import com.souk.common.domain.ProductMedia.ValidationStatus;
+import com.souk.common.domain.ProductMedia.StorageProvider;
 import com.souk.common.port.DataAccessPort;
 import com.souk.product.api.dto.ProductCreateRequest;
 import com.souk.product.api.dto.ProductResponse;
@@ -22,23 +22,28 @@ import java.util.Optional;
 public class ProductController {
 
     private final DataAccessPort<Product, Long> productPort;
-    private final DataAccessPort<ProductImage, Long> imagePort;
+    private final DataAccessPort<ProductMedia, Long> mediaPort;
 
     public ProductController(DataAccessPort<Product, Long> productPort,
-                             DataAccessPort<ProductImage, Long> imagePort) {
+                             DataAccessPort<ProductMedia, Long> mediaPort) {
         this.productPort = productPort;
-        this.imagePort = imagePort;
+        this.mediaPort = mediaPort;
     }
 
-    // --- Get all products ---
+    // ------------------------------------------------------------
+    // 🔹 PRODUCT CRUD ENDPOINTS
+    // ------------------------------------------------------------
+
+    /** Get all products */
     @GetMapping
     public List<ProductResponse> listAll() {
-        return productPort.findAll().stream()
+        return productPort.findAll()
+                .stream()
                 .map(ProductResponse::from)
                 .toList();
     }
 
-    // --- Get product by ID ---
+    /** Get product by ID */
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getById(@PathVariable @Min(1) Long id) {
         return productPort.findById(id)
@@ -47,17 +52,19 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- Get product by SKU ---
+    /** Get product by SKU */
     @GetMapping("/sku/{sku}")
     public ResponseEntity<ProductResponse> getBySku(@PathVariable String sku) {
         Optional<Product> p = productPort.findAll().stream()
                 .filter(prod -> sku.equals(prod.getSku()))
                 .findFirst();
-        return p.map(ProductResponse::from).map(ResponseEntity::ok)
+
+        return p.map(ProductResponse::from)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- Create new product ---
+    /** Create a new product */
     @PostMapping
     public ResponseEntity<ProductResponse> create(@RequestBody @Valid ProductCreateRequest req) {
         Product toSave = req.toDomain();
@@ -67,26 +74,20 @@ public class ProductController {
                 .body(ProductResponse.from(saved));
     }
 
-    // --- Update existing product ---
+    /** Update an existing product */
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> update(@PathVariable @Min(1) Long id,
                                                   @RequestBody @Valid ProductUpdateRequest req) {
         return productPort.findById(id)
                 .map(existing -> {
-                    existing.setName(req.name());
-                    existing.setPrice(req.price());
-                    existing.setSku(req.sku());
-                    existing.setVendorId(req.vendorId());
-                    existing.setAvailable(req.available());
-                    existing.setCategoryDetails(req.categoryDetails());
-                    existing.setSchedule(req.schedule());
-                    Product saved = productPort.save(existing);
+                    Product updated = req.applyTo(existing);
+                    Product saved = productPort.save(updated);
                     return ResponseEntity.ok(ProductResponse.from(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- Delete product ---
+    /** Delete a product */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable @Min(1) Long id) {
         return productPort.findById(id)
@@ -94,45 +95,73 @@ public class ProductController {
                     productPort.deleteById(id);
                     return ResponseEntity.noContent().<Void>build();
                 })
-                .orElseGet(() -> ResponseEntity.notFound().<Void>build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- Upload image(s) for a product ---
-    @PostMapping("/{productId}/images")
-    public ResponseEntity<ProductImage> uploadImage(
+    // ------------------------------------------------------------
+    // 🔹 PRODUCT MEDIA ENDPOINTS
+    // ------------------------------------------------------------
+
+    /** Upload media (image/video) for a product */
+    @PostMapping("/{productId}/media")
+    public ResponseEntity<ProductMedia> uploadMedia(
             @PathVariable @Min(1) Long productId,
-            @RequestBody ProductImage uploadRequest
+            @RequestBody @Valid ProductMedia uploadRequest
     ) {
         return productPort.findById(productId)
                 .map(product -> {
-                    ProductImage img = new ProductImage();
-                    img.setProduct(product);
-                    img.setImageUrl(uploadRequest.getImageUrl());
-                    img.setMimeType(uploadRequest.getMimeType());
-                    img.setWidth(uploadRequest.getWidth());
-                    img.setHeight(uploadRequest.getHeight());
-                    img.setSizeKb(uploadRequest.getSizeKb());
-                    img.setStorageProvider(uploadRequest.getStorageProvider() != null
+                    ProductMedia media = new ProductMedia();
+                    media.setProduct(product);
+                    media.setMediaUrl(uploadRequest.getMediaUrl());
+                    media.setDescription(uploadRequest.getDescription());
+                    media.setMimeType(uploadRequest.getMimeType());
+                    media.setWidth(uploadRequest.getWidth());
+                    media.setHeight(uploadRequest.getHeight());
+                    media.setSizeKb(uploadRequest.getSizeKb());
+                    media.setDurationSeconds(uploadRequest.getDurationSeconds());
+                    media.setResolution(uploadRequest.getResolution());
+
+                    // auto-detect or fallback to LOCAL
+                    media.setStorageProvider(uploadRequest.getStorageProvider() != null
                             ? uploadRequest.getStorageProvider()
                             : StorageProvider.LOCAL);
-                    img.setValidationStatus(ValidationStatus.PENDING);
 
-                    ProductImage savedImage = imagePort.save(img);
+                    media.setValidationStatus(ValidationStatus.PENDING);
+                    ProductMedia saved = mediaPort.save(media);
+
                     return ResponseEntity
-                            .created(URI.create("/products/" + productId + "/images/" + savedImage.getId()))
-                            .body(savedImage);
+                            .created(URI.create("/products/" + productId + "/media/" + saved.getId()))
+                            .body(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // --- Get all images for a product ---
-    @GetMapping("/{productId}/images")
-    public ResponseEntity<List<ProductImage>> listImages(@PathVariable @Min(1) Long productId) {
+    /** List all media for a product */
+    @GetMapping("/{productId}/media")
+    public ResponseEntity<List<ProductMedia>> listMedia(@PathVariable @Min(1) Long productId) {
+        return productPort.findById(productId)
+                .map(product -> ResponseEntity.ok(product.getMedia()))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Delete a specific media item */
+    @DeleteMapping("/{productId}/media/{mediaId}")
+    public ResponseEntity<?> deleteMedia(
+            @PathVariable @Min(1) Long productId,
+            @PathVariable @Min(1) Long mediaId
+    ) {
         return productPort.findById(productId)
                 .map(product -> {
-                    List<ProductImage> images = product.getImages();
-                    return ResponseEntity.ok(images);
+                    Optional<ProductMedia> target = product.getMedia().stream()
+                            .filter(m -> m.getId().equals(mediaId))
+                            .findFirst();
+
+                    if (target.isPresent()) {
+                        mediaPort.deleteById(mediaId);
+                        return ResponseEntity.noContent().<Void>build();
+                    }
+                    return ResponseEntity.notFound().build();
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(()->ResponseEntity.notFound().build());
     }
 }

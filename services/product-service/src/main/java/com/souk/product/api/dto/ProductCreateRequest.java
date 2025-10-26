@@ -1,93 +1,92 @@
 package com.souk.product.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Product;
-import com.souk.common.domain.ProductImage;
+import com.souk.common.domain.ProductMedia;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ProductCreateRequest(
-
         @NotBlank String name,
         @NotBlank String sku,
-        @NotNull @DecimalMin(value = "0.0", inclusive = false) BigDecimal price,
+        @NotNull BigDecimal price,
         @NotNull Long vendorId,
-        @NotNull Boolean available,
-
+        Boolean available,
         JsonNode categoryDetails,
         JsonNode schedule,
-
-        @Size(min = 1, message = "At least one image must be provided")
-        List<ImageRequest> images
-
+        List<MediaRequest> media
 ) {
     public Product toDomain() {
-        Product product = new Product();
-        product.setName(name);
-        product.setSku(sku);
-        product.setPrice(price);
-        product.setVendorId(vendorId);
-        product.setAvailable(available);
-        product.setCategoryDetails(categoryDetails);
-        product.setSchedule(schedule);
+        Product p = new Product();
+        p.setName(name);
+        p.setSku(sku);
+        p.setPrice(price);
+        p.setVendorId(vendorId);
+        p.setAvailable(available != null ? available : Boolean.TRUE);
+        p.setCategoryDetails(categoryDetails);
+        p.setSchedule(schedule);
 
-        if (images != null && !images.isEmpty()) {
-            product.setImages(
-                    images.stream()
-                            .map(ImageRequest::toDomain)
-                            .collect(Collectors.toList())
-            );
+        // Attach media items if present
+        if (media != null && !media.isEmpty()) {
+            List<ProductMedia> mediaEntities = media.stream()
+                    .map(MediaRequest::toDomain)
+                    .toList();
+            mediaEntities.forEach(m -> m.setProduct(p));
+            p.setMedia(mediaEntities);
         }
 
-        return product;
+        return p;
     }
 
-    // ✅ Nested Image DTO — aligned with product_images schema
-    public record ImageRequest(
-            @NotBlank String url,               // corresponds to image_url
-            String mimeType,                    // mime_type
-            Integer width,                      // width
-            Integer height,                     // height
-            Integer sizeKb,                     // size_kb
-            String storageProvider,             // storage_provider
-            String validationStatus             // validation_status (optional)
+    // Nested record for media items
+    public record MediaRequest(
+            @NotBlank String mediaUrl,
+            String description,
+            String mimeType,
+            Integer width,
+            Integer height,
+            Integer sizeKb,
+            Integer durationSeconds,
+            String resolution,
+            String mediaType,         // IMAGE or VIDEO
+            String storageProvider     // LOCAL, S3, CLOUDFLARE, GCP
     ) {
-        public ProductImage toDomain() {
-            ProductImage img = new ProductImage();
-            img.setImageUrl(url);
-            img.setMimeType(mimeType);
-            img.setWidth(width);
-            img.setHeight(height);
-            img.setSizeKb(sizeKb);
+        public ProductMedia toDomain() {
+            ProductMedia media = new ProductMedia();
+            media.setMediaUrl(mediaUrl);
+            media.setDescription(description);
+            media.setMimeType(mimeType);
+            media.setWidth(width);
+            media.setHeight(height);
+            media.setSizeKb(sizeKb);
+            media.setDurationSeconds(durationSeconds);
+            media.setResolution(resolution);
+
+            if (mediaType != null) {
+                try {
+                    media.setMediaType(ProductMedia.MediaType.valueOf(mediaType.toUpperCase()));
+                } catch (IllegalArgumentException ignored) {
+                    media.setMediaType(ProductMedia.MediaType.IMAGE); // default
+                }
+            } else {
+                media.setMediaType(ProductMedia.MediaType.IMAGE);
+            }
 
             if (storageProvider != null) {
                 try {
-                    img.setStorageProvider(
-                            ProductImage.StorageProvider.valueOf(storageProvider.toUpperCase())
-                    );
+                    media.setStorageProvider(ProductMedia.StorageProvider.valueOf(storageProvider.toUpperCase()));
                 } catch (IllegalArgumentException ignored) {
-                    img.setStorageProvider(ProductImage.StorageProvider.LOCAL);
-                }
-            }
-
-            if (validationStatus != null) {
-                try {
-                    img.setValidationStatus(
-                            ProductImage.ValidationStatus.valueOf(validationStatus.toUpperCase())
-                    );
-                } catch (IllegalArgumentException ignored) {
-                    img.setValidationStatus(ProductImage.ValidationStatus.PENDING);
+                    media.setStorageProvider(ProductMedia.StorageProvider.LOCAL);
                 }
             } else {
-                img.setValidationStatus(ProductImage.ValidationStatus.PENDING);
+                media.setStorageProvider(ProductMedia.StorageProvider.LOCAL);
             }
 
-            return img;
+            media.setValidationStatus(ProductMedia.ValidationStatus.PENDING);
+            return media;
         }
     }
 }

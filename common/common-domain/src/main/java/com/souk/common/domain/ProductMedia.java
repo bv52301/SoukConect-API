@@ -4,28 +4,38 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "product_images",
+@Table(
+        name = "product_media",
         indexes = {
-                @Index(name = "idx_product_id", columnList = "product_id"),
-                @Index(name = "idx_validation_status", columnList = "validation_status")
-        })
-public class ProductImage {
+                @Index(name = "idx_media_product", columnList = "product_id"),
+                @Index(name = "idx_media_status", columnList = "validation_status"),
+                @Index(name = "idx_media_uploaded", columnList = "uploaded_at")
+        }
+)
+public class ProductMedia {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "image_id")
+    @Column(name = "media_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(name = "image_url", nullable = false, length = 500)
-    private String imageUrl;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "media_type", nullable = false, length = 10)
+    private MediaType mediaType = MediaType.IMAGE; // Default to IMAGE
+
+    @Column(name = "media_url", nullable = false, length = 1000)
+    private String mediaUrl;
+
+    @Column(name = "description", length = 500)
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "storage_provider", nullable = false, length = 20)
-    private StorageProvider storageProvider = StorageProvider.LOCAL; // default
+    private StorageProvider storageProvider = StorageProvider.LOCAL; // Default
 
     @Column(name = "mime_type", length = 100)
     private String mimeType;
@@ -39,9 +49,18 @@ public class ProductImage {
     @Column(name = "size_kb")
     private Integer sizeKb;
 
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
+
+    @Column(name = "resolution", length = 50)
+    private String resolution;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "validation_status", length = 20)
     private ValidationStatus validationStatus = ValidationStatus.PENDING;
+
+    @Column(name = "validation_error", columnDefinition = "TEXT")
+    private String validationError;
 
     @Column(name = "uploaded_at", updatable = false, insertable = false)
     private LocalDateTime uploadedAt;
@@ -49,7 +68,7 @@ public class ProductImage {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    // --- ENUMS ---
+    // ===== ENUMS =====
     public enum StorageProvider {
         LOCAL, S3, CLOUDFLARE, GCP
     }
@@ -58,16 +77,19 @@ public class ProductImage {
         PENDING, VALIDATED, REJECTED
     }
 
-    // --- AUTO-DETECTION LOGIC ---
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-        this.storageProvider = detectStorageProvider(imageUrl);
+    public enum MediaType {
+        IMAGE, VIDEO
     }
 
-    // --- PRIVATE HELPER ---
-    private StorageProvider detectStorageProvider(String imageUrl) {
-        if (imageUrl == null) return StorageProvider.LOCAL;
-        String lower = imageUrl.toLowerCase();
+    // ===== AUTO-DETECTION LOGIC =====
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+        this.storageProvider = detectStorageProvider(mediaUrl);
+    }
+
+    private StorageProvider detectStorageProvider(String mediaUrl) {
+        if (mediaUrl == null) return StorageProvider.LOCAL;
+        String lower = mediaUrl.toLowerCase();
 
         if (lower.contains("s3.amazonaws.com") || lower.contains(".s3.")) {
             return StorageProvider.S3;
@@ -81,13 +103,19 @@ public class ProductImage {
         return StorageProvider.LOCAL; // fallback
     }
 
-    // --- GETTERS & SETTERS ---
+    // ===== GETTERS & SETTERS =====
     public Long getId() { return id; }
 
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
 
-    public String getImageUrl() { return imageUrl; }
+    public MediaType getMediaType() { return mediaType; }
+    public void setMediaType(MediaType mediaType) { this.mediaType = mediaType; }
+
+    public String getMediaUrl() { return mediaUrl; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
     public StorageProvider getStorageProvider() { return storageProvider; }
     public void setStorageProvider(StorageProvider storageProvider) { this.storageProvider = storageProvider; }
@@ -104,8 +132,17 @@ public class ProductImage {
     public Integer getSizeKb() { return sizeKb; }
     public void setSizeKb(Integer sizeKb) { this.sizeKb = sizeKb; }
 
+    public Integer getDurationSeconds() { return durationSeconds; }
+    public void setDurationSeconds(Integer durationSeconds) { this.durationSeconds = durationSeconds; }
+
+    public String getResolution() { return resolution; }
+    public void setResolution(String resolution) { this.resolution = resolution; }
+
     public ValidationStatus getValidationStatus() { return validationStatus; }
     public void setValidationStatus(ValidationStatus validationStatus) { this.validationStatus = validationStatus; }
+
+    public String getValidationError() { return validationError; }
+    public void setValidationError(String validationError) { this.validationError = validationError; }
 
     public LocalDateTime getUploadedAt() { return uploadedAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
