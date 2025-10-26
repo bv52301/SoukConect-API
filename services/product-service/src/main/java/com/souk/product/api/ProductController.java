@@ -56,7 +56,9 @@ public class ProductController {
     @GetMapping("/sku/{sku}")
     public ResponseEntity<ProductResponse> getBySku(@PathVariable String sku) {
         Optional<Product> p = productPort.findAll().stream()
-                .filter(prod -> sku.equals(prod.getSku()))
+                .filter(prod -> sku.equals(prod
+
+                        .getSku()))
                 .findFirst();
 
         return p.map(ProductResponse::from)
@@ -139,9 +141,10 @@ public class ProductController {
     /** List all media for a product */
     @GetMapping("/{productId}/media")
     public ResponseEntity<List<ProductMedia>> listMedia(@PathVariable @Min(1) Long productId) {
+
         return productPort.findById(productId)
                 .map(product -> ResponseEntity.ok(product.getMedia()))
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(()->ResponseEntity.notFound().build());
     }
 
     /** Delete a specific media item */

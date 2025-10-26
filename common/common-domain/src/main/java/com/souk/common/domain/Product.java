@@ -2,16 +2,17 @@ package com.souk.common.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "products")
 public class Product {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "product_id")
@@ -46,12 +47,10 @@ public class Product {
     @Column(name = "schedule_updated", insertable = false, updatable = false)
     private LocalDateTime scheduleUpdated;
 
-    // --- Relation to ProductMedia ---
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductMedia> media;
 
-    // --- Getters & Setters ---
-
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
