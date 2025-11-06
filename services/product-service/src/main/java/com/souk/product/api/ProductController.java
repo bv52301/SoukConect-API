@@ -8,6 +8,7 @@ import com.souk.common.port.DataAccessPort;
 import com.souk.product.api.dto.ProductCreateRequest;
 import com.souk.product.api.dto.ProductResponse;
 import com.souk.product.api.dto.ProductUpdateRequest;
+import com.souk.common.port.ProductQueryPort;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
@@ -22,11 +23,14 @@ import java.util.Optional;
 public class ProductController {
 
     private final DataAccessPort<Product, Long> productPort;
+    private final ProductQueryPort productQueryPort;
     private final DataAccessPort<ProductMedia, Long> mediaPort;
 
     public ProductController(DataAccessPort<Product, Long> productPort,
+                             ProductQueryPort productQueryPort,
                              DataAccessPort<ProductMedia, Long> mediaPort) {
         this.productPort = productPort;
+        this.productQueryPort = productQueryPort;
         this.mediaPort = mediaPort;
     }
 
@@ -55,13 +59,8 @@ public class ProductController {
     /** Get product by SKU */
     @GetMapping("/sku/{sku}")
     public ResponseEntity<ProductResponse> getBySku(@PathVariable String sku) {
-        Optional<Product> p = productPort.findAll().stream()
-                .filter(prod -> sku.equals(prod
-
-                        .getSku()))
-                .findFirst();
-
-        return p.map(ProductResponse::from)
+        return productQueryPort.findBySku(sku)
+                .map(ProductResponse::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
