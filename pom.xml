@@ -38,6 +38,7 @@
         <module>services/combined-service</module>
         <module>services/customer-service</module>
         <module>services/order-service</module>
+        <module>db-installer</module>
     </modules>
 
     <build>
