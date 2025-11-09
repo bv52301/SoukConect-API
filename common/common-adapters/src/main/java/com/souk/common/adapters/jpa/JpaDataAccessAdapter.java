@@ -4,11 +4,9 @@ package com.souk.common.adapters.jpa;
 import com.souk.common.port.DataAccessPort;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-@Component
 public class JpaDataAccessAdapter<T, ID> implements DataAccessPort<T, ID> {
     private final JpaRepository<T, ID> repo;
 
