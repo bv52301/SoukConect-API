@@ -59,6 +59,45 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-start-scripts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}"/>
+                                <echo file="${project.build.directory}/start-${project.artifactId}.sh"><![CDATA[
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JAR="${DIR}/${project.build.finalName}.jar"
+PORT="${PORT:-8080}"
+JAVA_OPTS="${JAVA_OPTS:-}"
+exec java ${JAVA_OPTS} -Dserver.port="${PORT}" -Dserver.address=0.0.0.0 -jar "${JAR}"
+]]></echo>
+                                <chmod file="${project.build.directory}/start-${project.artifactId}.sh" perm="755" failonerror="false"/>
+                                <echo file="${project.build.directory}/start-${project.artifactId}.bat"><![CDATA[
+@echo off
+setlocal
+set "DIR=%~dp0"
+set "JAR=%DIR%${project.build.finalName}.jar"
+if "%PORT%"=="" set PORT=8080
+set "JAVA_OPTS=%JAVA_OPTS%"
+java %JAVA_OPTS% -Dserver.port=%PORT% -Dserver.address=0.0.0.0 -jar "%JAR%"
+endlocal
+]]></echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
