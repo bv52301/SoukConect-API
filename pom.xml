@@ -39,6 +39,7 @@
         <module>services/customer-service</module>
         <module>services/order-service</module>
         <module>db-installer</module>
+        <module>web-admin</module>
     </modules>
 
     <build>

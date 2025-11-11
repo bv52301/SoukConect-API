@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.souk</groupId>
+        <artifactId>soukconect-api</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>web-admin</artifactId>
+    <name>web-admin</name>
+    <packaging>pom</packaging>
+
+    <properties>
+        <!-- Change if you want a different default API for production builds -->
+        <ui.apiBaseUrl>http://ec2-13-250-197-155.ap-southeast-1.compute.amazonaws.com:8080</ui.apiBaseUrl>
+        <node.version>v18.20.4</node.version>
+        <npm.version>10.7.0</npm.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- Write .env.production so Vite bakes the API base URL -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>write-env-production</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo file="${project.basedir}/.env.production">
+VITE_API_BASE_URL=${ui.apiBaseUrl}
+                                </echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Build the SPA with a pinned Node/NPM (no system Node dependency) -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.0</version>
+                <configuration>
+                    <workingDirectory>${project.basedir}</workingDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>${node.version}</nodeVersion>
+                            <npmVersion>${npm.version}</npmVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>install --no-fund --no-audit</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Zip the dist/ folder into a distributable UI artifact -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>zip-ui</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/ui.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Use this profile to build the UI with an empty API base so the app
+             calls relative paths and can be reverse-proxied by nginx (no CORS). -->
+        <profile>
+            <id>proxy</id>
+            <properties>
+                <ui.apiBaseUrl></ui.apiBaseUrl>
+            </properties>
+        </profile>
+
+        <!-- Convenience profile to explicitly build against the existing EC2 API host. -->
+        <profile>
+            <id>api-ec2</id>
+            <properties>
+                <ui.apiBaseUrl>http://ec2-13-250-197-155.ap-southeast-1.compute.amazonaws.com:8080</ui.apiBaseUrl>
+            </properties>
+        </profile>
+    </profiles>
+</project>

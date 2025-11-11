@@ -12,6 +12,10 @@ import com.souk.common.port.ProductQueryPort;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -85,7 +89,7 @@ public class ProductController {
                     Product saved = productPort.save(updated);
                     return ResponseEntity.ok(ProductResponse.from(saved));
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.<ProductMedia>notFound().build());
     }
 
     /** Delete a product */
@@ -103,7 +107,7 @@ public class ProductController {
     // 🔹 PRODUCT MEDIA ENDPOINTS
     // ------------------------------------------------------------
 
-    /** Upload media (image/video) for a product */
+    /** Upload media (image/video) metadata for a product */
     @PostMapping("/{productId}/media")
     public ResponseEntity<ProductMedia> uploadMedia(
             @PathVariable @Min(1) Long productId,
@@ -143,7 +147,50 @@ public class ProductController {
 
         return productPort.findById(productId)
                 .map(product -> ResponseEntity.ok(product.getMedia()))
-                .orElseGet(()->ResponseEntity.notFound().build());
+                .orElseGet(()->ResponseEntity.<java.util.List<ProductMedia>>notFound().build());
+    }
+
+    /** Upload media binary (multipart) and create ProductMedia with a served URL */
+    @PostMapping(value = "/{productId}/media/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProductMedia> uploadMediaFile(
+            @PathVariable @Min(1) Long productId,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "description", required = false) String description
+    ) {
+        var opt = productPort.findById(productId);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        var product = opt.get();
+        try {
+            String orig = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload";
+            String safe = orig.replaceAll("[^a-zA-Z0-9._-]", "_");
+            java.nio.file.Path base = java.nio.file.Paths.get(System.getProperty("user.home"), "souk-uploads", "products", String.valueOf(productId));
+            java.nio.file.Files.createDirectories(base);
+            java.nio.file.Path dest = base.resolve(System.currentTimeMillis() + "-" + safe);
+            file.transferTo(dest.toFile());
+
+            String mediaPath = "/uploads/products/" + productId + "/" + dest.getFileName();
+
+            ProductMedia media = new ProductMedia();
+            media.setProduct(product);
+            media.setDescription(description);
+            media.setMimeType(file.getContentType());
+            media.setSizeKb((int) Math.max(1, file.getSize() / 1024));
+            if (file.getContentType() != null && file.getContentType().startsWith("video")) {
+                media.setMediaType(ProductMedia.MediaType.VIDEO);
+            } else {
+                media.setMediaType(ProductMedia.MediaType.IMAGE);
+            }
+            media.setValidationStatus(ProductMedia.ValidationStatus.PENDING);
+            media.setStorageProvider(ProductMedia.StorageProvider.LOCAL);
+            media.setMediaUrl(mediaPath);
+
+            ProductMedia saved = mediaPort.save(media);
+            return ResponseEntity
+                    .created(URI.create("/products/" + productId + "/media/" + saved.getId()))
+                    .body(saved);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /** Delete a specific media item */

@@ -1,0 +1,7 @@
+set $api_origin http://HOST:PORT;
+
+# By default, each service proxies to the combined origin above.
+# To split services, change any of the following to explicit http://HOST:PORT values.
+set $vendors_origin   $api_origin;
+set $products_origin  $api_origin;
+set $customers_origin $api_origin;

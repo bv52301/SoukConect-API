@@ -26,10 +26,18 @@ public class VendorController {
 
     // --- List all vendors ---
     @GetMapping
-    public List<VendorResponse> listAll() {
-        return vendorPort.findAll().stream()
-                .map(VendorResponse::from)
-                .toList();
+    public List<VendorResponse> listAll(@RequestParam(value = "q", required = false) String q) {
+        var stream = vendorPort.findAll().stream();
+        if (q != null && !q.isBlank()) {
+            final String needle = q.toLowerCase();
+            stream = stream.filter(v ->
+                    (v.getName() != null && v.getName().toLowerCase().contains(needle)) ||
+                    (v.getEmail() != null && v.getEmail().toLowerCase().contains(needle)) ||
+                    (v.getPhoneNumber() != null && v.getPhoneNumber().toLowerCase().contains(needle)) ||
+                    (v.getVendorId() != null && String.valueOf(v.getVendorId()).contains(needle))
+            );
+        }
+        return stream.map(VendorResponse::from).toList();
     }
 
     // --- Get vendor by ID ---
