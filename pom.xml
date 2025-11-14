@@ -40,6 +40,7 @@
         <module>services/order-service</module>
         <module>db-installer</module>
         <module>web-admin</module>
+        <module>services/cuisine-service</module>
     </modules>
 
     <build>

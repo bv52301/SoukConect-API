@@ -23,6 +23,20 @@
         <fileSet>
             <directory>${project.basedir}/deploy</directory>
             <outputDirectory>/deploy</outputDirectory>
+            <excludes>
+                <!-- Exclude install.sh here so the dedicated fileSet below (with unix line endings) takes effect -->
+                <exclude>install.sh</exclude>
+            </excludes>
+        </fileSet>
+        <!-- Ensure install.sh ships with UNIX line endings and executable bit -->
+        <fileSet>
+            <directory>${project.basedir}/deploy</directory>
+            <outputDirectory>/deploy</outputDirectory>
+            <includes>
+                <include>install.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
         </fileSet>
     </fileSets>
 </assembly>

@@ -11,6 +11,7 @@ export default function App() {
           <Button color="inherit" component={Link} to="/vendors">Vendors</Button>
           <Button color="inherit" component={Link} to="/products">Products</Button>
           <Button color="inherit" component={Link} to="/customers">Customers</Button>
+          <Button color="inherit" component={Link} to="/cuisines">Cuisines</Button>
         </Toolbar>
       </AppBar>
       <Box sx={{ py: 3 }}>

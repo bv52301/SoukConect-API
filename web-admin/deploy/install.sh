@@ -11,6 +11,8 @@ PRODUCTS_HOST="${PRODUCTS_HOST:-}"
 PRODUCTS_PORT="${PRODUCTS_PORT:-}"
 CUSTOMERS_HOST="${CUSTOMERS_HOST:-}"
 CUSTOMERS_PORT="${CUSTOMERS_PORT:-}"
+CUISINES_HOST="${CUISINES_HOST:-}"
+CUISINES_PORT="${CUISINES_PORT:-}"
 UI_ROOT="${UI_ROOT:-/var/www}"
 SITE_CONF_PATH="${SITE_CONF_PATH:-/etc/nginx/conf.d/souk-admin.conf}"
 API_CONF_DIR="${API_CONF_DIR:-/etc/souk-admin}"
@@ -43,6 +45,7 @@ sed -i "s|http://HOST:PORT|http://$API_HOST_NOSCHEME:$API_PORT|g" "$API_CONF_FIL
 grep -q '\$vendors_origin'   "$API_CONF_FILE" || echo 'set $vendors_origin   $api_origin;' >> "$API_CONF_FILE"
 grep -q '\$products_origin'  "$API_CONF_FILE" || echo 'set $products_origin  $api_origin;' >> "$API_CONF_FILE"
 grep -q '\$customers_origin' "$API_CONF_FILE" || echo 'set $customers_origin $api_origin;' >> "$API_CONF_FILE"
+grep -q '\$cuisines_origin'  "$API_CONF_FILE" || echo 'set $cuisines_origin  $api_origin;' >> "$API_CONF_FILE"
 # If per-service envs are provided, append overrides so they take precedence
 if [[ -n "$VENDORS_HOST" ]]; then
   host="$VENDORS_HOST"; host="${host#http://}"; host="${host#https://}"; host="${host%/}"
@@ -55,6 +58,10 @@ fi
 if [[ -n "$CUSTOMERS_HOST" ]]; then
   host="$CUSTOMERS_HOST"; host="${host#http://}"; host="${host#https://}"; host="${host%/}"
   echo "set \$customers_origin http://$host:${CUSTOMERS_PORT:-$API_PORT};" >> "$API_CONF_FILE"
+fi
+if [[ -n "$CUISINES_HOST" ]]; then
+  host="$CUISINES_HOST"; host="${host#http://}"; host="${host#https://}"; host="${host%/}"
+  echo "set \$cuisines_origin http://$host:${CUISINES_PORT:-$API_PORT};" >> "$API_CONF_FILE"
 fi
 echo "Configured API origin in $API_CONF_FILE"
 
@@ -95,12 +102,22 @@ systemctl reload nginx || systemctl restart nginx
 if [[ -n "${PUBLIC_URL:-}" ]]; then
   base_url="$PUBLIC_URL"
 else
-  # Try AWS metadata first (public hostname, then IP), with short timeouts
-  meta_host=$(curl -fsS --max-time 1 http://169.254.169.254/latest/meta-data/public-hostname || true)
+  # Try AWS metadata (IMDSv2 aware), silence failures
+  get_meta() {
+    local path="$1"; local tok=""; local val="";
+    tok=$(curl -fsS -X PUT --max-time 1 -H "X-aws-ec2-metadata-token-ttl-seconds: 60" http://169.254.169.254/latest/api/token 2>/dev/null || true)
+    if [[ -n "$tok" ]]; then
+      val=$(curl -fsS --max-time 1 -H "X-aws-ec2-metadata-token: $tok" "http://169.254.169.254/latest/meta-data/${path}" 2>/dev/null || true)
+    else
+      val=$(curl -fsS --max-time 1 "http://169.254.169.254/latest/meta-data/${path}" 2>/dev/null || true)
+    fi
+    echo "$val"
+  }
+  meta_host=$(get_meta public-hostname)
   if [[ -n "$meta_host" ]]; then
     base_url="http://$meta_host"
   else
-    meta_ip=$(curl -fsS --max-time 1 http://169.254.169.254/latest/meta-data/public-ipv4 || true)
+    meta_ip=$(get_meta public-ipv4)
     if [[ -n "$meta_ip" ]]; then
       base_url="http://$meta_ip"
     else

@@ -1,22 +1,16 @@
-package com.souk.combined;
+package com.souk.cuisine;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-
-
-@SpringBootApplication(scanBasePackages = {
-        "com.souk.product",
-        "com.souk.vendor",
-        "com.souk.cuisine",
-        "com.souk.common"
-})
+@SpringBootApplication(scanBasePackages = {"com.souk.cuisine", "com.souk.common"})
 @EnableJpaRepositories(basePackages = "com.souk.common.adapters.jpa.repository")
 @EntityScan(basePackages = "com.souk.common.domain")
-public class CombinedServiceApplication {
+public class CuisineServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(CombinedServiceApplication.class, args);
+        SpringApplication.run(CuisineServiceApplication.class, args);
     }
 }
+

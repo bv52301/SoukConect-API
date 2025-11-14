@@ -53,3 +53,11 @@ export type Customer = {
   email: string;
   phone?: string;
 };
+
+export type Cuisine = {
+  id?: number;
+  cuisineName: string;
+  category?: string;
+  subcategory?: string;
+  region?: string;
+};

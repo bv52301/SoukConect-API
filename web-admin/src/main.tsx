@@ -9,6 +9,8 @@ import ProductsList from './pages/products/ProductsList';
 import ProductForm from './pages/products/ProductForm';
 import CustomersList from './pages/customers/CustomersList';
 import CustomerForm from './pages/customers/CustomerForm';
+import CuisinesList from './pages/cuisines/CuisinesList';
+import CuisineForm from './pages/cuisines/CuisineForm';
 
 const qc = new QueryClient();
 
@@ -27,6 +29,9 @@ const router = createBrowserRouter([
       { path: 'customers', element: <CustomersList /> },
       { path: 'customers/new', element: <CustomerForm mode="create" /> },
       { path: 'customers/:id', element: <CustomerForm mode="edit" /> },
+      { path: 'cuisines', element: <CuisinesList /> },
+      { path: 'cuisines/new', element: <CuisineForm mode="create" /> },
+      { path: 'cuisines/:id', element: <CuisineForm mode="edit" /> },
     ],
   },
 ]);

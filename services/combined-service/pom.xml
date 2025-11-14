@@ -74,6 +74,11 @@
             <artifactId>vendor-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.souk</groupId>
+            <artifactId>cuisine-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -95,7 +100,7 @@
                         </goals>
                         <configuration>
                             <includeGroupIds>com.souk</includeGroupIds>
-                            <includeArtifactIds>product-service,vendor-service</includeArtifactIds>
+                            <includeArtifactIds>product-service,vendor-service,cuisine-service</includeArtifactIds>
                             <includeTypes>jar</includeTypes>
                             <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                         </configuration>

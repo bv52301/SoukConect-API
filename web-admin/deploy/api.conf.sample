@@ -5,3 +5,4 @@ set $api_origin http://HOST:PORT;
 set $vendors_origin   $api_origin;
 set $products_origin  $api_origin;
 set $customers_origin $api_origin;
+set $cuisines_origin  $api_origin;

@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
             '/vendors': { target: proxyTarget, changeOrigin: true },
             '/products': { target: proxyTarget, changeOrigin: true },
             '/customers': { target: proxyTarget, changeOrigin: true },
+            '/cuisines': { target: proxyTarget, changeOrigin: true },
           }
         : undefined,
     },
