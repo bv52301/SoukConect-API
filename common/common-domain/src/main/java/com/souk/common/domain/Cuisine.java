@@ -3,7 +3,7 @@ package com.souk.common.domain;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "Cuisines", uniqueConstraints = {
+@Table(name = "cuisines", uniqueConstraints = {
         @UniqueConstraint(name = "uq_cuisine", columnNames = {"cuisinename", "category", "subcategory", "region"})
 })
 public class Cuisine {

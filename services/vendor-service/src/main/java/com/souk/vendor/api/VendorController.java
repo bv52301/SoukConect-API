@@ -2,6 +2,7 @@ package com.souk.vendor.api;
 
 import com.souk.common.domain.Vendor;
 import com.souk.common.port.DataAccessPort;
+import com.souk.common.adapters.jpa.repository.VendorRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +20,11 @@ import java.util.Optional;
 public class VendorController {
 
     private final DataAccessPort<Vendor, Long> vendorPort;
+    private final VendorRepository vendorRepo;
 
-    public VendorController(DataAccessPort<Vendor, Long> vendorPort) {
+    public VendorController(DataAccessPort<Vendor, Long> vendorPort, VendorRepository vendorRepo) {
         this.vendorPort = vendorPort;
+        this.vendorRepo = vendorRepo;
     }
 
     // --- List all vendors ---
@@ -38,6 +41,15 @@ public class VendorController {
             );
         }
         return stream.map(VendorResponse::from).toList();
+    }
+
+    // --- Find vendors by supported category ---
+    @GetMapping("/by-category")
+    public List<VendorResponse> listByCategory(@RequestParam("category") String category) {
+        if (category == null || category.isBlank()) return List.of();
+        return vendorRepo.findByCategory(category.trim()).stream()
+                .map(VendorResponse::from)
+                .toList();
     }
 
     // --- Get vendor by ID ---

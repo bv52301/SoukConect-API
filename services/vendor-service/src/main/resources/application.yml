@@ -10,20 +10,22 @@ spring:
   flyway:
     enabled: false
   datasource:
-    url: "jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?allowPublicKeyRetrieval=true&useSsl=false"
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
-    driver-class-name: org.mariadb.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      #ddl-auto: validate   # change to 'update' if you want Hibernate to create/alter tables
-      ddl-auto: update   # change to 'update' if you want Hibernate to create/alter tables
+      ddl-auto: validate   # prevent Hibernate from creating/altering tables
+      # Prevent snake_case conversion; respect explicit @Column names
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
 
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MariaDBDialect
+        dialect: org.hibernate.dialect.MySQLDialect
     open-in-view: false
 
 # Optional SQL logging while debugging
