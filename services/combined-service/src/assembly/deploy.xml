@@ -9,9 +9,23 @@
     <baseDirectory>${project.artifactId}-${project.version}</baseDirectory>
 
     <fileSets>
+        <!-- Ensure shell scripts ship with Unix line endings and exec perms -->
         <fileSet>
             <directory>${project.build.directory}/deploy</directory>
             <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+            </includes>
+            <lineEnding>unix</lineEnding>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <!-- Include all other deploy files (jar, bat, logs dir, etc.) -->
+        <fileSet>
+            <directory>${project.build.directory}/deploy</directory>
+            <outputDirectory>/</outputDirectory>
+            <excludes>
+                <exclude>*.sh</exclude>
+            </excludes>
         </fileSet>
     </fileSets>
 </assembly>

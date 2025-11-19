@@ -12,6 +12,18 @@
         <fileSet>
             <directory>${project.build.directory}/deploy</directory>
             <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+            </includes>
+            <lineEnding>unix</lineEnding>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/deploy</directory>
+            <outputDirectory>/</outputDirectory>
+            <excludes>
+                <exclude>*.sh</exclude>
+            </excludes>
         </fileSet>
     </fileSets>
 </assembly>
