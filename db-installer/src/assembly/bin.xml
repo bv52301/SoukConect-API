@@ -8,6 +8,13 @@
     <includeBaseDirectory>true</includeBaseDirectory>
 
     <files>
+        <!-- Bundle version marker produced during build -->
+        <file>
+            <source>${project.build.directory}/BUNDLE_VERSION</source>
+            <outputDirectory>/</outputDirectory>
+            <filtered>false</filtered>
+            <fileMode>0644</fileMode>
+        </file>
         <!-- Windows installer script -->
         <file>
             <source>${project.parent.basedir}/sql_files/install_sql_files.bat</source>
@@ -15,29 +22,32 @@
             <filtered>false</filtered>
             <fileMode>0755</fileMode>
         </file>
-        <!-- Linux installer script -->
-        <file>
-            <source>${project.parent.basedir}/sql_files/install_sql_files.sh</source>
-            <outputDirectory>/</outputDirectory>
-            <filtered>false</filtered>
-            <fileMode>0755</fileMode>
-        </file>
     </files>
 
     <fileSets>
-        <!-- Include all SQL files under sql/ directory in the archive -->
+        <!-- Linux installer script with Unix line endings -->
         <fileSet>
             <directory>${project.parent.basedir}/sql_files</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>install_sql_files.sh</include>
+            </includes>
+            <lineEnding>unix</lineEnding>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <!-- Include staged SQL from target/sql (prepared by antrun based on bundle.env) -->
+        <fileSet>
+            <directory>${project.build.directory}/sql</directory>
             <outputDirectory>/sql</outputDirectory>
             <includes>
-                <include>*.sql</include>
+                <include>**/*.sql</include>
             </includes>
             <lineEnding>unix</lineEnding>
             <fileMode>0644</fileMode>
         </fileSet>
-        <!-- Optional: include a README if present -->
+        <!-- Include db-installer specific README -->
         <fileSet>
-            <directory>${project.parent.basedir}</directory>
+            <directory>${project.basedir}</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>README.md</include>

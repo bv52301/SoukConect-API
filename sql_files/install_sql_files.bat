@@ -1,29 +1,31 @@
 @echo off
 :: ================================================================
-:: MySQL Database Initialization Script
-:: (Auth + PATH + Verbose + Safe Abort + Empty Password Support)
+:: MySQL Database Initialization Script (Windows)
+:: - Ensures mysql client available
+:: - Creates database if missing
+:: - Processes sql\base\*.sql then sql\patches\**\*.sql
+:: - For each file: computes SHA256, consults schema_patch_registry
+::     * If not present -> executes file, records 'applied'
+::     * If present AND checksum same -> skip
+::     * If present AND checksum different -> abort (force new filename)
+:: - Reads bundle version from env BUNDLE_VERSION or from BUNDLE_VERSION file
 :: ================================================================
 :: Usage:
 ::   %~n0 <auth_mode> [show]
 ::     <auth_mode> : ssl | password
-::     [show]      : optional, enables verbose output (echo on)
-::
-:: What it does:
-::   - Ensures MySQL client is available
-::   - Creates database if missing
-::   - Imports ALL .sql files in this folder (sql_files) in sorted order
-::
-:: Examples:
-::   %~n0 password
-::   %~n0 ssl show
+::     [show]      : optional, echo on
+:: Env (DB + version):
+::   MYSQL_HOST / MYSQL_PORT / MYSQL_USER / MYSQL_PASS / DB_NAME
+::   BUNDLE_VERSION (else reads .\BUNDLE_VERSION)
+::   APPLIED_BY (default: %USERNAME%)
 :: ================================================================
 
-:: --- Basic Connection Settings ---
-set MYSQL_USER=root
-set MYSQL_PASS=
-set MYSQL_HOST=127.0.0.1
-set MYSQL_PORT=3306
-set DB_NAME=soukconect
+:: --- Basic Connection Settings (overridable via env) ---
+if not defined MYSQL_USER   set MYSQL_USER=root
+if not defined MYSQL_PASS   set MYSQL_PASS=
+if not defined MYSQL_HOST   set MYSQL_HOST=127.0.0.1
+if not defined MYSQL_PORT   set MYSQL_PORT=3306
+if not defined DB_NAME      set DB_NAME=soukconect
 
 :: --- SSL Certificate Paths ---
 set SSL_CA=C:\mysql_certs\ca.pem
@@ -32,6 +34,7 @@ set SSL_KEY=C:\mysql_certs\client-key.pem
 
 :: --- Script Paths ---
 set SCRIPT_PATH=%~dp0
+set SQL_ROOT=%SCRIPT_PATH%sql\
 
 :: --- Parse Arguments ---
 if "%~1"=="" (
@@ -105,7 +108,7 @@ echo Initializing MySQL database: %DB_NAME%
 echo Authentication mode: %AUTH_MODE%
 echo Verbose mode: %VERBOSE%
 echo Using MySQL client: %MYSQL_CMD%
-echo SQL directory: %SCRIPT_PATH% (detecting .sql location)
+echo SQL root: %SQL_ROOT%
 echo ===========================================
 
 :: Helper macro to run command and check for errors
@@ -124,30 +127,47 @@ echo ---------------------------------------
 %run_mysql% %MYSQL_CMD% %AUTH_ARGS% -h %MYSQL_HOST% -P %MYSQL_PORT% -e "CREATE DATABASE IF NOT EXISTS `%DB_NAME%` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
 
 :: ===========================================================
-::  STEP 4: Import ALL .sql files in sorted order
+::  STEP 4a: Determine bundle version
 :: ===========================================================
-set "SQL_DIR=%SCRIPT_PATH%"
-dir /b "%SQL_DIR%*.sql" >nul 2>nul
-if errorlevel 1 (
-    if exist "%SCRIPT_PATH%sql\" (
-        set "SQL_DIR=%SCRIPT_PATH%sql\"
-    )
+if not defined BUNDLE_VERSION (
+  if exist "%SCRIPT_PATH%BUNDLE_VERSION" (
+    set /p BUNDLE_VERSION=<"%SCRIPT_PATH%BUNDLE_VERSION"
+  ) else (
+    set BUNDLE_VERSION=unversioned
+  )
 )
-dir /b "%SQL_DIR%*.sql" >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: No .sql files found in "%SCRIPT_PATH%" or "%SCRIPT_PATH%sql\"
-    pause
-    exit /b 1
+if not defined APPLIED_BY set APPLIED_BY=%USERNAME%
+
+:: ===========================================================
+::  STEP 4b: Registry created by base/0000_schema_patch_registry.sql
+:: ===========================================================
+
+:: ===========================================================
+::  STEP 5: Process base then patches
+:: ===========================================================
+if not exist "%SQL_ROOT%" (
+  echo ERROR: SQL root not found: %SQL_ROOT%
+  exit /b 1
 )
 
-echo Importing .sql files from: %SQL_DIR%
-for /f "delims=" %%F in ('dir /b /on "%SQL_DIR%*.sql"') do (
-    echo ---------------------------------------
-    echo Importing %%~nxF ...
-    call :run_mysql_file "%SQL_DIR%%%~nxF"
-    if errorlevel 1 (
-        echo Warning: %%~nxF returned errorlevel !ERRORLEVEL! - continuing
-    )
+echo Processing base SQL from %SQL_ROOT%base\
+if exist "%SQL_ROOT%base\" (
+  for /f "delims=" %%F in ('dir /b /on "%SQL_ROOT%base\*.sql" 2^>nul') do (
+    call :process_sql "%SQL_ROOT%base\%%~nxF"
+    if %EXITCODE% neq 0 exit /b %EXITCODE%
+  )
+) else (
+  echo (no base directory; skipping)
+)
+
+echo Processing patches (recursive) from %SQL_ROOT%patches\
+if exist "%SQL_ROOT%patches\" (
+  for /f "delims=" %%F in ('dir /b /s /on "%SQL_ROOT%patches\*.sql" 2^>nul') do (
+    call :process_sql "%%~fF"
+    if %EXITCODE% neq 0 exit /b %EXITCODE%
+  )
+) else (
+  echo (no patches directory; skipping)
 )
 
 :: ===========================================================
@@ -189,3 +209,45 @@ set "SQLFILE=%~1"
 "%MYSQL_CMD%" %AUTH_ARGS% -h %MYSQL_HOST% -P %MYSQL_PORT% %DB_NAME% < "%SQLFILE%"
 set CODE=%errorlevel%
 endlocal & exit /b %CODE%
+
+:: ===========================================================
+::  Subroutine: sha256 (uses PowerShell)
+:: ===========================================================
+:sha256
+setlocal
+set "_in=%~1"
+for /f "usebackq tokens=*" %%H in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath '%_in%').Hash"`) do set "_sum=%%H"
+endlocal & set "_SUM=%_sum%"
+exit /b 0
+
+:: ===========================================================
+::  Subroutine: process_sql (checksum + registry + execute)
+:: ===========================================================
+:process_sql
+setlocal EnableDelayedExpansion
+set "FULL=%~1"
+set "REL=%FULL:%SQL_ROOT%=%"
+call :sha256 "%FULL%"
+set "SUM=%_SUM%"
+
+for /f "usebackq tokens=*" %%E in (`"%MYSQL_CMD%" %AUTH_ARGS% -h %MYSQL_HOST% -P %MYSQL_PORT% -N -B %DB_NAME% -e "SELECT checksum_sha256 FROM schema_patch_registry WHERE script_name='!REL!' LIMIT 1;"`) do set "EXIST=%%E"
+
+if defined EXIST (
+  if /I "!EXIST!"=="!SUM!" (
+    echo [skip] !REL! already installed; checksum match, ignoring
+    endlocal & set EXITCODE=0 & exit /b 0
+  ) else (
+    echo [ABORT] !REL! already applied with different checksum (!EXIST! ^!= !SUM!)
+    endlocal & set EXITCODE=1 & exit /b 1
+  )
+)
+
+echo Executing !REL! ...
+call :run_mysql_file "%FULL%"
+set CODE=%errorlevel%
+if not "%CODE%"=="0" (
+  echo [fail] !REL! failed to apply
+  endlocal & set EXITCODE=%CODE% & exit /b %CODE%
+)
+"%MYSQL_CMD%" %AUTH_ARGS% -h %MYSQL_HOST% -P %MYSQL_PORT% %DB_NAME% -e "INSERT INTO schema_patch_registry(script_name,checksum_sha256,bundle_version,applied_by,status) VALUES ('!REL!','!SUM!','%BUNDLE_VERSION%','%APPLIED_BY%','applied');"
+endlocal & set EXITCODE=0 & exit /b 0
