@@ -23,3 +23,4 @@ CREATE TABLE product_media (
   INDEX idx_product_media_status (validation_status),
   INDEX idx_product_media_type (media_type)
 );
+-- moved to base directory for initial schema

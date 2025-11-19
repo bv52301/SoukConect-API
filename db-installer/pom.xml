@@ -14,8 +14,54 @@
     <name>db-installer</name>
     <packaging>pom</packaging>
 
+    <properties>
+        <maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
+        <!-- Which environment's patches to include: dev | uat | prod -->
+        <bundle.env>dev</bundle.env>
+    </properties>
+
     <build>
         <plugins>
+            <!-- Stage base SQL and write bundle version -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>stage-sql-base</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo>Staging base SQL (bundle.env='${bundle.env}')</echo>
+                                <mkdir dir="${project.build.directory}/sql"/>
+                                <mkdir dir="${project.build.directory}/sql/base"/>
+                                <mkdir dir="${project.build.directory}/sql/patches"/>
+                                <copy todir="${project.build.directory}/sql/base" overwrite="true">
+                                    <fileset dir="${project.basedir}/../sql_files/base" erroronmissingdir="false">
+                                        <include name="**/*.sql"/>
+                                    </fileset>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>write-bundle-version</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo file="${project.build.directory}/BUNDLE_VERSION">${project.version}-${maven.build.timestamp}</echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -38,7 +84,129 @@
                 </executions>
             </plugin>
         </plugins>
-    </build>
+  </build>
+
+  <profiles>
+      <profile>
+          <id>dev</id>
+          <activation>
+              <property>
+                  <name>bundle.env</name>
+                  <value>dev</value>
+              </property>
+          </activation>
+          <build>
+              <plugins>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-antrun-plugin</artifactId>
+                      <version>3.1.0</version>
+                      <executions>
+                          <execution>
+                              <id>stage-patches-dev</id>
+                              <phase>prepare-package</phase>
+                              <goals><goal>run</goal></goals>
+                              <configuration>
+                                  <target>
+                                      <echo>Including dev patches</echo>
+                                      <copy todir="${project.build.directory}/sql/patches" overwrite="true">
+                                          <fileset dir="${project.basedir}/../sql_files/patches/dev" erroronmissingdir="false">
+                                              <include name="**/*.sql"/>
+                                          </fileset>
+                                      </copy>
+                                  </target>
+                              </configuration>
+                          </execution>
+                      </executions>
+                  </plugin>
+              </plugins>
+          </build>
+      </profile>
+      <profile>
+          <id>uat</id>
+          <activation>
+              <property>
+                  <name>bundle.env</name>
+                  <value>uat</value>
+              </property>
+          </activation>
+          <build>
+              <plugins>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-antrun-plugin</artifactId>
+                      <version>3.1.0</version>
+                      <executions>
+                          <execution>
+                              <id>stage-patches-uat</id>
+                              <phase>prepare-package</phase>
+                              <goals><goal>run</goal></goals>
+                              <configuration>
+                                  <target>
+                                      <echo>Including dev + uat patches</echo>
+                                      <copy todir="${project.build.directory}/sql/patches" overwrite="true">
+                                          <fileset dir="${project.basedir}/../sql_files/patches/dev" erroronmissingdir="false">
+                                              <include name="**/*.sql"/>
+                                          </fileset>
+                                      </copy>
+                                      <copy todir="${project.build.directory}/sql/patches" overwrite="true">
+                                          <fileset dir="${project.basedir}/../sql_files/patches/uat" erroronmissingdir="false">
+                                              <include name="**/*.sql"/>
+                                          </fileset>
+                                      </copy>
+                                  </target>
+                              </configuration>
+                          </execution>
+                      </executions>
+                  </plugin>
+              </plugins>
+          </build>
+      </profile>
+      <profile>
+          <id>prod</id>
+          <activation>
+              <property>
+                  <name>bundle.env</name>
+                  <value>prod</value>
+              </property>
+          </activation>
+          <build>
+              <plugins>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-antrun-plugin</artifactId>
+                      <version>3.1.0</version>
+                      <executions>
+                          <execution>
+                              <id>stage-patches-prod</id>
+                              <phase>prepare-package</phase>
+                              <goals><goal>run</goal></goals>
+                              <configuration>
+                                  <target>
+                                      <echo>Including dev + uat + prod patches</echo>
+                                      <copy todir="${project.build.directory}/sql/patches" overwrite="true">
+                                          <fileset dir="${project.basedir}/../sql_files/patches/dev" erroronmissingdir="false">
+                                              <include name="**/*.sql"/>
+                                          </fileset>
+                                      </copy>
+                                      <copy todir="${project.build.directory}/sql/patches" overwrite="true">
+                                          <fileset dir="${project.basedir}/../sql_files/patches/uat" erroronmissingdir="false">
+                                              <include name="**/*.sql"/>
+                                          </fileset>
+                                      </copy>
+                                      <copy todir="${project.build.directory}/sql/patches" overwrite="true">
+                                          <fileset dir="${project.basedir}/../sql_files/patches/prod" erroronmissingdir="false">
+                                              <include name="**/*.sql"/>
+                                          </fileset>
+                                      </copy>
+                                  </target>
+                              </configuration>
+                          </execution>
+                      </executions>
+                  </plugin>
+              </plugins>
+          </build>
+      </profile>
+  </profiles>
 
 </project>
-
