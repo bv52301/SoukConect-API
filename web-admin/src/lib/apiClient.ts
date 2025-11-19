@@ -22,6 +22,7 @@ export async function fetchPreview(url: string): Promise<{ localUrl: string; mim
 export type Vendor = {
   vendorId?: number;
   name: string;
+  description?: string;
   supportedCategories?: unknown;
   image?: string;
   address1?: string;
@@ -40,6 +41,7 @@ export type Product = {
   sku: string;
   price: number;
   vendorId: number;
+  description?: string;
   available?: boolean;
   categoryDetails?: unknown;
   schedule?: unknown;

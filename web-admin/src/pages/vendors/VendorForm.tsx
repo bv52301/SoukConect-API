@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, Stack, TextField, Typography, Button, CircularProgress } from '@mui/material';
+import { Card, CardContent, Stack, TextField, Typography, Button, CircularProgress, Autocomplete } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import PreviewGallery from '../../components/previewgallery';
@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 const schema = z.object({
   name: z.string().min(1),
+  description: z.string().max(1000, 'Max 1000 characters').optional().or(z.literal('')),
   email: z.string().email().optional().or(z.literal('')),
   phoneNumber: z.string().optional().or(z.literal('')),
   address1: z.string().optional().or(z.literal('')),
@@ -19,7 +20,6 @@ const schema = z.object({
   pincode: z.string().optional().or(z.literal('')),
   contactName: z.string().optional().or(z.literal('')),
   image: z.string().url().optional().or(z.literal('')),
-  supportedCategories: z.string().optional().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -38,11 +38,19 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema) });
   const [previewOpen, setPreviewOpen] = useState(false);
   const [items, setItems] = useState<Array<{url:string; mimeType?: string; sizeBytes?: number}>>([]);
+  const [supportedCats, setSupportedCats] = useState<string[]>([]);
+
+  // Distinct categories from cuisines service
+  const catsQuery = useQuery({
+    queryKey: ['cuisine-categories'],
+    queryFn: () => api<string[]>('/cuisines/categories'),
+  });
 
   useEffect(() => {
     if (data) {
       reset({
         name: data.name || '',
+        description: data.description || '',
         email: data.email || '',
         phoneNumber: data.phoneNumber || '',
         address1: data.address1 || '',
@@ -51,8 +59,11 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
         pincode: data.pincode || '',
         contactName: data.contactName || '',
         image: data.image || '',
-        supportedCategories: data.supportedCategories ? JSON.stringify(data.supportedCategories, null, 2) : '',
       });
+      // Hydrate supported categories from array or map
+      const sc: any = data.supportedCategories;
+      if (Array.isArray(sc)) setSupportedCats(sc.filter((s:any)=> typeof s === 'string'));
+      else if (sc && typeof sc === 'object') setSupportedCats(Object.keys(sc));
     }
   }, [data, reset]);
 
@@ -60,6 +71,7 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
     mutationFn: async (values: FormValues) => {
       const payload: Vendor = {
         name: values.name,
+        description: blankToUndef(values.description),
         email: blankToUndef(values.email),
         phoneNumber: blankToUndef(values.phoneNumber),
         address1: blankToUndef(values.address1),
@@ -68,7 +80,7 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
         pincode: blankToUndef(values.pincode),
         contactName: blankToUndef(values.contactName),
         image: blankToUndef(values.image),
-        supportedCategories: parseJsonSafe(values.supportedCategories),
+        supportedCategories: supportedCats.length ? supportedCats : undefined,
       };
       if (mode === 'create') {
         return api<Vendor>('/vendors', { method: 'POST', body: JSON.stringify(payload) });
@@ -90,6 +102,7 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
           <form onSubmit={handleSubmit(v => mutate.mutate(v))}>
             <Stack spacing={2}>
               <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} />
+              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} />
               <TextField label="Email" {...register('email')} error={!!errors.email} helperText={errors.email?.message} />
               <TextField label="Phone" {...register('phoneNumber')} />
               <TextField label="Address 1" {...register('address1')} />
@@ -114,8 +127,13 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
                 disabled={!watch('image')}
               >Preview</Button>
               <PreviewGallery open={previewOpen} onClose={() => setPreviewOpen(false)} items={items.map(it => ({...it, onDelete: () => { setValue('image',''); setPreviewOpen(false); setItems([]); }}))} />
-              <TextField label="supportedCategories (JSON)" {...register('supportedCategories')}
-                multiline minRows={6} placeholder='{"Category": "..."}' />
+              <Autocomplete
+                multiple
+                options={catsQuery.data ?? []}
+                value={supportedCats}
+                onChange={(_, v) => setSupportedCats(v)}
+                renderInput={(params) => <TextField {...params} label="Supported Categories" placeholder="Select categories" />}
+              />
               <Button type="submit" variant="contained" disabled={mutate.isPending} endIcon={mutate.isPending ? <CircularProgress size={16} /> : undefined}>
                 {mode === 'create' ? 'Create' : 'Save'}
               </Button>

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/cuisines")
@@ -25,6 +27,18 @@ public class CuisineController {
     @GetMapping
     public List<Cuisine> listAll() {
         return cuisinePort.findAll();
+    }
+
+    @GetMapping("/categories")
+    public List<String> listDistinctCategories() {
+        return cuisinePort.findAll().stream()
+                .map(Cuisine::getCategory)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .sorted(String::compareToIgnoreCase)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")

@@ -15,6 +15,7 @@ const schema = z.object({
   sku: z.string().min(1),
   price: z.coerce.number().nonnegative(),
   vendorId: z.coerce.number().int().positive(),
+  description: z.string().max(1000, 'Max 1000 characters').optional().or(z.literal('')),
   available: z.boolean().optional(),
   categoryDetails: z.string().optional().or(z.literal('')),
   schedule: z.string().optional().or(z.literal('')),
@@ -91,6 +92,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
         sku: data.sku,
         price: data.price,
         vendorId: data.vendorId,
+        description: data.description || '',
         available: data.available ?? true,
         categoryDetails: data.categoryDetails ? JSON.stringify(data.categoryDetails, null, 2) : '',
         schedule: data.schedule ? JSON.stringify(data.schedule, null, 2) : '',
@@ -156,6 +158,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
         sku: values.sku,
         price: Number(values.price),
         vendorId: Number(values.vendorId),
+        description: blankToUndef(values.description),
         available: values.available,
         categoryDetails: buildCategoryDetails(cuisineName, category, subCategory, regionCategory) ?? parseJsonSafe(values.categoryDetails),
         schedule: parseJsonSafe(values.schedule),
@@ -188,6 +191,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
               <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} />
               <TextField label="SKU" {...register('sku')} error={!!errors.sku} helperText={errors.sku?.message} />
               <TextField label="Price" type="number" inputProps={{ step: '0.01' }} {...register('price')} error={!!errors.price} helperText={errors.price?.message} />
+              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} />
               <Controller
                 name="vendorId"
                 render={({ field }) => (
@@ -442,4 +446,9 @@ function buildSchedule(
   const b = blackoutArr.filter(Boolean);
   if (b.length) sc.blackout = b;
   return Object.keys(sc).length ? sc : undefined;
+}
+
+function blankToUndef<T extends string | undefined>(v: T) {
+  if (!v) return undefined;
+  return (v as unknown as string).trim() === '' ? undefined : v;
 }
