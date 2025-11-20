@@ -62,4 +62,5 @@ export type Cuisine = {
   category?: string;
   subcategory?: string;
   region?: string;
+  image?: string;
 };

@@ -1,4 +1,4 @@
-CREATE TABLE Cuisines (
+CREATE TABLE cuisines (
   cuisine_id  BIGINT PRIMARY KEY AUTO_INCREMENT,
   cuisinename VARCHAR(100) NOT NULL,      -- e.g., Asian, Middle East, Mediterranean
   category    VARCHAR(100) NOT NULL,      -- e.g., Indian, Chinese

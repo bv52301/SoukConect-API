@@ -24,6 +24,9 @@ public class Cuisine {
     @Column(name = "region", length = 100)
     private String region;
 
+    @Column(name = "image", length = 300)
+    private String image;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getCuisineName() { return cuisineName; }
@@ -34,5 +37,6 @@ public class Cuisine {
     public void setSubcategory(String subcategory) { this.subcategory = subcategory; }
     public String getRegion() { return region; }
     public void setRegion(String region) { this.region = region; }
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
 }
-

@@ -30,6 +30,7 @@ export default function CuisinesList() {
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
+                  <TableCell>Image</TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell>Category</TableCell>
                   <TableCell>Subcategory</TableCell>
@@ -41,6 +42,16 @@ export default function CuisinesList() {
                 {data.map(c => (
                   <TableRow key={c.id}>
                     <TableCell>{c.id}</TableCell>
+                    <TableCell>
+                      {c.image ? (
+                        <img
+                          src={c.image}
+                          alt=""
+                          style={{ maxHeight: 32, maxWidth: 48 }}
+                          onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      ) : '-'}
+                    </TableCell>
                     <TableCell>{c.cuisineName}</TableCell>
                     <TableCell>{c.category}</TableCell>
                     <TableCell>{c.subcategory}</TableCell>
@@ -59,4 +70,3 @@ export default function CuisinesList() {
     </Stack>
   );
 }
-

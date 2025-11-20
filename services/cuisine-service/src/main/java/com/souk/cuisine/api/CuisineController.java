@@ -62,6 +62,7 @@ public class CuisineController {
                     existing.setCategory(req.getCategory());
                     existing.setSubcategory(req.getSubcategory());
                     existing.setRegion(req.getRegion());
+                    existing.setImage(req.getImage());
                     return ResponseEntity.ok(cuisinePort.save(existing));
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -74,4 +75,3 @@ public class CuisineController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-

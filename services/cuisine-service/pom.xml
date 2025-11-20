@@ -16,7 +16,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.souk</groupId>bye
+            <groupId>com.souk</groupId>
             <artifactId>common-domain</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -49,4 +49,3 @@
         </plugins>
     </build>
 </project>
-
