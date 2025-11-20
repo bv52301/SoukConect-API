@@ -36,6 +36,9 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
   });
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const values = watch();
+  const imageValue = values.image;
+  const shrinkIfFilled = (value?: string | null) => (typeof value === 'string' && value.trim().length > 0 ? { shrink: true } : undefined);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [items, setItems] = useState<Array<{url:string; mimeType?: string; sizeBytes?: number}>>([]);
   const [supportedCats, setSupportedCats] = useState<string[]>([]);
@@ -101,30 +104,30 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
         <CardContent>
           <form onSubmit={handleSubmit(v => mutate.mutate(v))}>
             <Stack spacing={2}>
-              <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} />
-              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} />
-              <TextField label="Email" {...register('email')} error={!!errors.email} helperText={errors.email?.message} />
-              <TextField label="Phone" {...register('phoneNumber')} />
-              <TextField label="Address 1" {...register('address1')} />
-              <TextField label="Address 2" {...register('address2')} />
-              <TextField label="State" {...register('state')} />
-              <TextField label="Pincode" {...register('pincode')} />
-              <TextField label="Contact Name" {...register('contactName')} />
-              <TextField label="Image URL" {...register('image')} />
+              <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} InputLabelProps={shrinkIfFilled(values.name)} />
+              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} InputLabelProps={shrinkIfFilled(values.description)} />
+              <TextField label="Email" {...register('email')} error={!!errors.email} helperText={errors.email?.message} InputLabelProps={shrinkIfFilled(values.email)} />
+              <TextField label="Phone" {...register('phoneNumber')} InputLabelProps={shrinkIfFilled(values.phoneNumber)} />
+              <TextField label="Address 1" {...register('address1')} InputLabelProps={shrinkIfFilled(values.address1)} />
+              <TextField label="Address 2" {...register('address2')} InputLabelProps={shrinkIfFilled(values.address2)} />
+              <TextField label="State" {...register('state')} InputLabelProps={shrinkIfFilled(values.state)} />
+              <TextField label="Pincode" {...register('pincode')} InputLabelProps={shrinkIfFilled(values.pincode)} />
+              <TextField label="Contact Name" {...register('contactName')} InputLabelProps={shrinkIfFilled(values.contactName)} />
+              <TextField label="Image URL" {...register('image')} InputLabelProps={shrinkIfFilled(values.image)} />
               <Button
                 variant="outlined"
                 onClick={async () => {
-                  if (!watch('image')) return;
+                  if (!imageValue) return;
                   try {
-                    const p = await fetchPreview(watch('image')!);
+                    const p = await fetchPreview(imageValue);
                     setItems([{ url: p.localUrl, mimeType: p.mimeType, sizeBytes: p.size }]);
                     setPreviewOpen(true);
                   } catch {
-                    setItems([{ url: watch('image')! }]);
+                    setItems([{ url: imageValue }]);
                     setPreviewOpen(true);
                   }
                 }}
-                disabled={!watch('image')}
+                disabled={!imageValue}
               >Preview</Button>
               <PreviewGallery open={previewOpen} onClose={() => setPreviewOpen(false)} items={items.map(it => ({...it, onDelete: () => { setValue('image',''); setPreviewOpen(false); setItems([]); }}))} />
               <Autocomplete

@@ -84,6 +84,12 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
   const dowOptions = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   const { register, handleSubmit, control, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { available: true, cdCuisine: '', cdCategory: '', cdSubCategory: '', cdRegion: '' } });
+  const values = watch();
+  const shrinkIfFilled = (value: unknown) => {
+    if (value === undefined || value === null) return undefined;
+    const str = typeof value === 'string' ? value : String(value);
+    return str.trim().length > 0 ? { shrink: true } : undefined;
+  };
 
   useEffect(() => {
     if (data) {
@@ -188,10 +194,10 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
         <CardContent>
           <form onSubmit={handleSubmit(v => mutate.mutate(v))}>
             <Stack spacing={2}>
-              <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} />
-              <TextField label="SKU" {...register('sku')} error={!!errors.sku} helperText={errors.sku?.message} />
-              <TextField label="Price" type="number" inputProps={{ step: '0.01' }} {...register('price')} error={!!errors.price} helperText={errors.price?.message} />
-              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} />
+              <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} InputLabelProps={shrinkIfFilled(values.name)} />
+              <TextField label="SKU" {...register('sku')} error={!!errors.sku} helperText={errors.sku?.message} InputLabelProps={shrinkIfFilled(values.sku)} />
+              <TextField label="Price" type="number" inputProps={{ step: '0.01' }} {...register('price')} error={!!errors.price} helperText={errors.price?.message} InputLabelProps={shrinkIfFilled(values.price)} />
+              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} InputLabelProps={shrinkIfFilled(values.description)} />
               <Controller
                 name="vendorId"
                 render={({ field }) => (
@@ -260,7 +266,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
               <input type="hidden" {...register('cdRegion')} />
 
               {/* Keep the original JSON box, but auto-sync it from selectors */}
-              <TextField label="categoryDetails (JSON)" {...register('categoryDetails')} multiline minRows={3} placeholder='Optional: advanced JSON override' />
+              <TextField label="categoryDetails (JSON)" {...register('categoryDetails')} multiline minRows={3} placeholder='Optional: advanced JSON override' InputLabelProps={shrinkIfFilled(values.categoryDetails)} />
               <Divider />
               <Typography variant="subtitle1">Schedules</Typography>
               <Stack direction="row" spacing={1}>
@@ -307,7 +313,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
                   <IconButton aria-label="remove" onClick={()=> setBlackoutArr(arr => arr.filter((_,i)=> i!==idx))}><DeleteIcon /></IconButton>
                 </Stack>
               ))}
-              <TextField label="schedule (JSON)" {...register('schedule')} multiline minRows={4} />
+              <TextField label="schedule (JSON)" {...register('schedule')} multiline minRows={4} InputLabelProps={shrinkIfFilled(values.schedule)} />
               <Divider />
               <Typography variant="subtitle1">Media</Typography>
               {mode === 'create' && (

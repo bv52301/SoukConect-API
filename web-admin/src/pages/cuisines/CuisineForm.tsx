@@ -30,7 +30,9 @@ export default function CuisineForm({ mode }: { mode: 'create' | 'edit' }) {
   });
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema) });
-  const imageValue = watch('image');
+  const values = watch();
+  const imageValue = values.image;
+  const shrinkIfFilled = (value?: string | null) => (typeof value === 'string' && value.trim().length > 0 ? { shrink: true } : undefined);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewItems, setPreviewItems] = useState<Array<{ url: string; mimeType?: string; sizeBytes?: number }>>([]);
 
@@ -74,11 +76,11 @@ export default function CuisineForm({ mode }: { mode: 'create' | 'edit' }) {
         <CardContent>
           <form onSubmit={handleSubmit(v => mutate.mutate(v))}>
             <Stack spacing={2}>
-              <TextField label="Name" {...register('cuisineName')} error={!!errors.cuisineName} helperText={errors.cuisineName?.message} />
-              <TextField label="Category" {...register('category')} />
-              <TextField label="Subcategory" {...register('subcategory')} />
-              <TextField label="Region" {...register('region')} />
-              <TextField label="Image URL" {...register('image')} error={!!errors.image} helperText={errors.image?.message} />
+              <TextField label="Name" {...register('cuisineName')} error={!!errors.cuisineName} helperText={errors.cuisineName?.message} InputLabelProps={shrinkIfFilled(values.cuisineName)} />
+              <TextField label="Category" {...register('category')} InputLabelProps={shrinkIfFilled(values.category)} />
+              <TextField label="Subcategory" {...register('subcategory')} InputLabelProps={shrinkIfFilled(values.subcategory)} />
+              <TextField label="Region" {...register('region')} InputLabelProps={shrinkIfFilled(values.region)} />
+              <TextField label="Image URL" {...register('image')} error={!!errors.image} helperText={errors.image?.message} InputLabelProps={shrinkIfFilled(values.image)} />
               <Button
                 variant="outlined"
                 onClick={async () => {
