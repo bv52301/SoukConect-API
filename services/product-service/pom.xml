@@ -9,6 +9,7 @@
         <groupId>com.souk</groupId>
         <artifactId>soukconect-api</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>product-service</artifactId>
