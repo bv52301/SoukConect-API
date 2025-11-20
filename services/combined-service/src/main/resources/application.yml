@@ -6,7 +6,7 @@ spring:
     password: ${DB_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: validate   # prevent schema drift; rely on db-installer
+      ddl-auto: none       # disable Hibernate DDL validation; rely on db-installer/migrations
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true

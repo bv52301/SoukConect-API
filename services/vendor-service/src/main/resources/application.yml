@@ -16,7 +16,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: validate   # prevent Hibernate from creating/altering tables
+      ddl-auto: none       # disable Hibernate DDL validation/updates; rely on migrations
       # Prevent snake_case conversion; respect explicit @Column names
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl

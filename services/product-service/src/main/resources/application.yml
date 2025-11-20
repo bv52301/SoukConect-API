@@ -14,8 +14,7 @@ spring:
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
-      #ddl-auto: validate   # change to 'update' if you want Hibernate to create/alter tables
-      ddl-auto: update   # change to 'update' if you want Hibernate to create/alter tables
+      ddl-auto: none   # disable Hibernate schema management; rely on migrations/db-installer
     show-sql: true
 
     properties:
