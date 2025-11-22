@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, FormControlLabel, Stack, Switch, TextField, Typography, Button, CircularProgress, Divider, IconButton, Autocomplete } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -17,13 +17,8 @@ const schema = z.object({
   vendorId: z.coerce.number().int().positive(),
   description: z.string().max(1000, 'Max 1000 characters').optional().or(z.literal('')),
   available: z.boolean().optional(),
-  categoryDetails: z.string().optional().or(z.literal('')),
+  categoryDetails: z.string().min(2, 'At least one category is required'),
   schedule: z.string().optional().or(z.literal('')),
-  // Derived from selectors; used only for validation
-  cdCuisine: z.string().min(1, 'Cuisine is required'),
-  cdCategory: z.string().min(1, 'Category is required'),
-  cdSubCategory: z.string().optional().or(z.literal('')),
-  cdRegion: z.string().optional().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -65,10 +60,9 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
     queryKey: ['cuisines'],
     queryFn: () => api<Cuisine[]>(`/cuisines`),
   });
-  const [cuisineName, setCuisineName] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
-  const [subCategory, setSubCategory] = useState<string | null>(null);
-  const [regionCategory, setRegionCategory] = useState<string | null>(null);
+  type CategoryEntry = { cuisineName: string | null; categories: string[]; subCategories: string[]; regionCategory: string | null };
+  const emptyEntry: CategoryEntry = { cuisineName: null, categories: [], subCategories: [], regionCategory: null };
+  const [categoryEntries, setCategoryEntries] = useState<CategoryEntry[]>([emptyEntry]);
 
   const [files, setFiles] = useState<FileList | null>(null);
   const [filePreviews, setFilePreviews] = useState<string[]>([]);
@@ -83,7 +77,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
   const [blackoutArr, setBlackoutArr] = useState<string[]>([]);
   const dowOptions = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-  const { register, handleSubmit, control, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { available: true, cdCuisine: '', cdCategory: '', cdSubCategory: '', cdRegion: '' } });
+  const { register, handleSubmit, control, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { available: true, categoryDetails: '' } });
   const values = watch();
   const shrinkIfFilled = (value: unknown) => {
     if (value === undefined || value === null) return undefined;
@@ -103,21 +97,12 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
         categoryDetails: data.categoryDetails ? JSON.stringify(data.categoryDetails, null, 2) : '',
         schedule: data.schedule ? JSON.stringify(data.schedule, null, 2) : '',
       });
-      // Pre-populate cuisine fields from categoryDetails if present
-      try {
-        const cd: any = data.categoryDetails || undefined;
-        if (cd) {
-          const toSN = (v: any): string | null => (v ?? null) as string | null;
-          const v1 = toSN(cd.Cuisinename ?? cd.cuisineName);
-          const v2 = toSN(cd.Category ?? cd.category);
-          const v3 = toSN(cd.SubCategory ?? cd.subcategory);
-          const v4 = toSN(cd.regionCategory ?? cd.region);
-          setCuisineName(v1); setValue('cdCuisine', v1 ?? '');
-          setCategory(v2); setValue('cdCategory', v2 ?? '');
-          setSubCategory(v3); setValue('cdSubCategory', v3 ?? '');
-          setRegionCategory(v4); setValue('cdRegion', v4 ?? '');
-        }
-      } catch {}
+      // Pre-populate category selections from categoryDetails (array of objects)
+      const normalized = normalizeCategoryDetailsArray(data?.categoryDetails);
+      if (normalized && normalized.length) {
+        setCategoryEntries(normalized);
+        setValue('categoryDetails', JSON.stringify(toCategoryPayloadArray(normalized), null, 2));
+      }
       // Pre-populate schedules
       try {
         const sc: any = data.schedule || undefined;
@@ -141,14 +126,13 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
 
   // Auto-update the categoryDetails JSON text area as selectors change
   useEffect(() => {
-    const cd = buildCategoryDetails(cuisineName, category, subCategory, regionCategory);
-    if (cd) {
+    const cd = toCategoryPayloadArray(categoryEntries);
+    if (cd && cd.length) {
       setValue('categoryDetails', JSON.stringify(cd, null, 2), { shouldDirty: true, shouldValidate: false });
     } else {
-      // If nothing selected, clear to keep UX clean
       setValue('categoryDetails', '', { shouldDirty: true, shouldValidate: false });
     }
-  }, [cuisineName, category, subCategory, regionCategory, setValue]);
+  }, [categoryEntries, setValue]);
 
   // Auto-update schedule JSON from UI rows
   useEffect(() => {
@@ -159,6 +143,8 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
 
   const mutate = useMutation({
     mutationFn: async (values: FormValues) => {
+      const categoryPayload = toCategoryPayloadArray(categoryEntries) ?? parseJsonSafe(values.categoryDetails);
+
       const payload: Product = {
         name: values.name,
         sku: values.sku,
@@ -166,7 +152,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
         vendorId: Number(values.vendorId),
         description: blankToUndef(values.description),
         available: values.available,
-        categoryDetails: buildCategoryDetails(cuisineName, category, subCategory, regionCategory) ?? parseJsonSafe(values.categoryDetails),
+        categoryDetails: categoryPayload,
         schedule: parseJsonSafe(values.schedule),
       };
       if (mode === 'create') {
@@ -218,52 +204,63 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
               />
               <FormControlLabel control={<Switch checked={!!watch('available')} onChange={(_, c) => setValue('available', c)} />} label="Available" />
               <Typography variant="subtitle1">Category Details</Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Autocomplete<string>
-                  sx={{ flex: 1, minWidth: 220 }}
-                  options={[...new Set((cuisinesQuery.data || []).map((c: Cuisine) => c.cuisineName).filter((s): s is string => !!s))]}
-                  value={cuisineName}
-                  onChange={(_, v) => { const nv = (v ?? null) as string | null; setCuisineName(nv); setValue('cdCuisine', v ?? ''); setCategory(null); setValue('cdCategory',''); setSubCategory(null); setValue('cdSubCategory',''); setRegionCategory(null); setValue('cdRegion',''); }}
-                  renderInput={(params) => <TextField {...params} label="Cuisine Name" error={!!errors.cdCuisine} helperText={errors.cdCuisine?.message} />}
-                />
-                <Autocomplete<string>
-                  sx={{ flex: 1, minWidth: 220 }}
-                  options={[...new Set((cuisinesQuery.data || [])
-                    .filter(c => !cuisineName || c.cuisineName === cuisineName)
-                    .map(c => c.category)
-                    .filter((s): s is string => !!s))]}
-                  value={category}
-                  onChange={(_, v) => { const nv = (v ?? null) as string | null; setCategory(nv); setValue('cdCategory', v ?? ''); setSubCategory(null); setValue('cdSubCategory',''); setRegionCategory(null); setValue('cdRegion',''); }}
-                  renderInput={(params) => <TextField {...params} label="Category" error={!!errors.cdCategory} helperText={errors.cdCategory?.message} />}
-                />
+              <Stack spacing={2}>
+                {categoryEntries.map((entry, idx) => (
+                  <Stack key={`cat-entry-${idx}`} spacing={2} border={1} borderColor="divider" borderRadius={1} padding={2}>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                    <Autocomplete<string>
+                      sx={{ flex: 1, minWidth: 220 }}
+                      options={[...new Set((cuisinesQuery.data || []).map((c: Cuisine) => c.cuisineName).filter((s): s is string => !!s))]}
+                      value={entry.cuisineName}
+                      onChange={(_, v) => {
+                        setCategoryEntries(arr => arr.map((it, i) => i === idx ? { ...it, cuisineName: v ?? null, categories: [], subCategories: [], regionCategory: null } : it));
+                      }}
+                      renderInput={(params) => <TextField {...params} label="Cuisine Name" error={idx === 0 && !!errors.categoryDetails} helperText={idx === 0 ? errors.categoryDetails?.message : undefined} />}
+                    />
+                    <IconButton aria-label="remove" onClick={() => setCategoryEntries(arr => arr.filter((_, i) => i !== idx))} disabled={categoryEntries.length === 1}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
+                    <Autocomplete<string, true, false, false>
+                      multiple
+                      sx={{ minWidth: 220 }}
+                      options={[...new Set((cuisinesQuery.data || [])
+                        .filter(c => !entry.cuisineName || c.cuisineName === entry.cuisineName)
+                        .map(c => c.category)
+                        .filter((s): s is string => !!s))]}
+                      value={entry.categories}
+                      onChange={(_, v) => {
+                        setCategoryEntries(arr => arr.map((it, i) => i === idx ? { ...it, categories: v, subCategories: it.subCategories.filter(s => v.includes(findCategoryForSub(cuisinesQuery.data || [], it.cuisineName, s) ?? '')) } : it));
+                      }}
+                      renderInput={(params) => <TextField {...params} label="Categories" placeholder="Select categories" />}
+                    />
+                    <Autocomplete<string, true, false, false>
+                      multiple
+                      sx={{ minWidth: 220 }}
+                      options={[...new Set((cuisinesQuery.data || [])
+                        .filter(c => (!entry.cuisineName || c.cuisineName === entry.cuisineName) && (entry.categories.length === 0 || entry.categories.includes(c.category || '')))
+                        .map(c => c.subcategory)
+                        .filter((s): s is string => !!s))]}
+                      value={entry.subCategories}
+                      onChange={(_, v) => setCategoryEntries(arr => arr.map((it, i) => i === idx ? { ...it, subCategories: v } : it))}
+                      renderInput={(params) => <TextField {...params} label="Sub Categories" placeholder="Optional" />}
+                    />
+                    <Autocomplete<string>
+                      sx={{ minWidth: 220 }}
+                      options={[...new Set((cuisinesQuery.data || [])
+                        .filter(c => (!entry.cuisineName || c.cuisineName === entry.cuisineName) && (entry.categories.length === 0 || entry.categories.includes(c.category || '')))
+                        .map(c => c.region)
+                        .filter((s): s is string => !!s))]}
+                      value={entry.regionCategory}
+                      onChange={(_, v) => setCategoryEntries(arr => arr.map((it, i) => i === idx ? { ...it, regionCategory: v ?? null } : it))}
+                      renderInput={(params) => <TextField {...params} label="Region Category" placeholder="Optional" />}
+                    />
+                  </Stack>
+                ))}
+                <Button size="small" variant="outlined" onClick={() => setCategoryEntries(arr => [...arr, emptyEntry])}>
+                  + Add Category Group
+                </Button>
               </Stack>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Autocomplete<string>
-                  sx={{ flex: 1, minWidth: 220 }}
-                  options={[...new Set((cuisinesQuery.data || [])
-                    .filter(c => (!cuisineName || c.cuisineName === cuisineName) && (!category || c.category === category))
-                    .map(c => c.subcategory)
-                    .filter((s): s is string => !!s))]}
-                  value={subCategory}
-                  onChange={(_, v) => { const nv = (v ?? null) as string | null; setSubCategory(nv); setValue('cdSubCategory', v ?? ''); setRegionCategory(null); setValue('cdRegion',''); }}
-                  renderInput={(params) => <TextField {...params} label="Sub Category" />}
-                />
-                <Autocomplete<string>
-                  sx={{ flex: 1, minWidth: 220 }}
-                  options={[...new Set((cuisinesQuery.data || [])
-                    .filter(c => (!cuisineName || c.cuisineName === cuisineName) && (!category || c.category === category) && (!subCategory || c.subcategory === subCategory))
-                    .map(c => c.region)
-                    .filter((s): s is string => !!s))]}
-                  value={regionCategory}
-                  onChange={(_, v) => { const nv = (v ?? null) as string | null; setRegionCategory(nv); setValue('cdRegion', v ?? ''); }}
-                  renderInput={(params) => <TextField {...params} label="Region Category" />}
-                />
-              </Stack>
-              {/* Hidden inputs to tie selector state into RHF for validation */}
-              <input type="hidden" {...register('cdCuisine')} />
-              <input type="hidden" {...register('cdCategory')} />
-              <input type="hidden" {...register('cdSubCategory')} />
-              <input type="hidden" {...register('cdRegion')} />
 
               {/* Keep the original JSON box, but auto-sync it from selectors */}
               <TextField label="categoryDetails (JSON)" {...register('categoryDetails')} multiline minRows={3} placeholder='Optional: advanced JSON override' InputLabelProps={shrinkIfFilled(values.categoryDetails)} />
@@ -413,18 +410,16 @@ function previewItems(urls: string, existingMedia?: any[], filePreviews?: string
   return items;
 }
 
-function buildCategoryDetails(
-  cuisineName?: string | null,
-  category?: string | null,
-  subCategory?: string | null,
-  regionCategory?: string | null
-) {
-  const obj: any = {};
-  if (cuisineName) obj.Cuisinename = cuisineName; // keep original casing used by backend
-  if (category) obj.Category = category;
-  if (subCategory) obj.SubCategory = subCategory;
-  if (regionCategory) obj.regionCategory = regionCategory;
-  return Object.keys(obj).length ? obj : undefined;
+function toCategoryPayloadArray(entries: { cuisineName: string | null; categories: string[]; subCategories: string[]; regionCategory: string | null }[]) {
+  const arr = entries
+    .filter(e => e.cuisineName && e.categories && e.categories.length > 0)
+    .map(e => ({
+      Cuisinename: e.cuisineName,
+      Category: e.categories,
+      SubCategory: e.subCategories,
+      ...(e.regionCategory ? { regionCategory: e.regionCategory } : {})
+    }));
+  return arr.length ? arr : undefined;
 }
 
 function buildSchedule(
@@ -457,4 +452,29 @@ function buildSchedule(
 function blankToUndef<T extends string | undefined>(v: T) {
   if (!v) return undefined;
   return (v as unknown as string).trim() === '' ? undefined : v;
+}
+
+function normalizeCategoryDetailsArray(raw?: unknown) {
+  if (!raw) return undefined;
+  const arr = Array.isArray(raw) ? raw : [raw as any];
+  const entries = arr
+    .map(item => {
+      if (!item || typeof item !== 'object') return undefined;
+      const cuisineName = (item.Cuisinename ?? item.cuisineName ?? null) as string | null;
+      const cat = item.Category;
+      const sub = item.SubCategory;
+      return {
+        cuisineName,
+        categories: Array.isArray(cat) ? cat.map(String) : [],
+        subCategories: Array.isArray(sub) ? sub.map(String) : [],
+        regionCategory: (item.regionCategory ?? item.region ?? null) as string | null,
+      };
+    })
+    .filter((e): e is { cuisineName: string | null; categories: string[]; subCategories: string[]; regionCategory: string | null } => !!e);
+  return entries.length ? entries : undefined;
+}
+
+function findCategoryForSub(cuisines: Cuisine[], cuisineName: string | null, sub: string) {
+  const match = cuisines.find(c => (!cuisineName || c.cuisineName === cuisineName) && c.subcategory === sub);
+  return match?.category;
 }

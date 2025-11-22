@@ -1,6 +1,7 @@
 package com.souk.product.api.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Product;
 import com.souk.common.domain.ProductMedia;
 import jakarta.validation.constraints.NotBlank;
@@ -15,10 +16,12 @@ public record ProductCreateRequest(
         @NotNull BigDecimal price,
         @NotNull Long vendorId,
         Boolean available,
-        JsonNode categoryDetails,
+        JsonNode categoryDetails,   // expected: array of objects; single object will be wrapped
         JsonNode schedule,
         List<MediaRequest> media
 ) {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     public Product toDomain() {
         Product p = new Product();
         p.setName(name);
@@ -26,7 +29,7 @@ public record ProductCreateRequest(
         p.setPrice(price);
         p.setVendorId(vendorId);
         p.setAvailable(available != null ? available : Boolean.TRUE);
-        p.setCategoryDetails(categoryDetails);
+        p.setCategoryDetails(normalizeCategoryPayload(categoryDetails));
         p.setSchedule(schedule);
 
         // Attach media items if present
@@ -39,6 +42,13 @@ public record ProductCreateRequest(
         }
 
         return p;
+    }
+
+    private static JsonNode normalizeCategoryPayload(JsonNode input) {
+        if (input == null) return null;
+        if (input.isArray()) return input;
+        // Wrap single object into array for consistent shape
+        return MAPPER.createArrayNode().add(input);
     }
 
     // Nested record for media items

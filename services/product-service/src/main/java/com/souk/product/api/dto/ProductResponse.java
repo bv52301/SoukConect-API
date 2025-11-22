@@ -1,6 +1,7 @@
 package com.souk.product.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Product;
 import com.souk.common.domain.ProductMedia;
 
@@ -15,6 +16,7 @@ public record ProductResponse(
         BigDecimal price,
         Long vendorId,
         Boolean available,
+        List<String> categories,
         Object categoryDetails,
         Object schedule,
         List<MediaResponse> media
@@ -35,10 +37,34 @@ public record ProductResponse(
                 product.getPrice(),
                 product.getVendorId(),
                 product.getAvailable(),
+                extractCategories(product.getCategoryDetails()),
                 product.getCategoryDetails(),
                 product.getSchedule(),
                 mediaResponses
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> extractCategories(Object categoryDetails) {
+        if (categoryDetails == null) return null;
+        // If stored as array of objects, take first element's Category array
+        if (categoryDetails instanceof List<?> list && !list.isEmpty()) {
+            Object first = list.get(0);
+            if (first instanceof java.util.Map<?,?> map) {
+                Object cat = map.get("Category");
+                if (cat instanceof List<?> clist) {
+                    return clist.stream().map(Object::toString).toList();
+                }
+            }
+        }
+        // Fallback: single object
+        if (categoryDetails instanceof java.util.Map<?,?> map) {
+            Object cat = map.get("Category");
+            if (cat instanceof List<?> clist) {
+                return clist.stream().map(Object::toString).toList();
+            }
+        }
+        return null;
     }
 
     public record MediaResponse(

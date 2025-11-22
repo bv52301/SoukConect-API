@@ -43,6 +43,7 @@ export type Product = {
   vendorId: number;
   description?: string;
   available?: boolean;
+  categories?: unknown[];
   categoryDetails?: unknown;
   schedule?: unknown;
   media?: Array<{ id?: number; url: string; mediaType?: string; description?: string }>; // optional from API
