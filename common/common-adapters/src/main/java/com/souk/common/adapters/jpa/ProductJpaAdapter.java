@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import com.souk.common.adapters.jpa.repository.ProductRepository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Component
 public class ProductJpaAdapter extends JpaDataAccessAdapter<Product, Long>
@@ -21,5 +22,10 @@ public class ProductJpaAdapter extends JpaDataAccessAdapter<Product, Long>
     @Override
     public Optional<Product> findBySku(String sku) {
         return repo.findBySku(sku);
+    }
+
+    @Override
+    public List<Product> findByVendorId(Long vendorId) {
+        return repo.findByVendorId(vendorId);
     }
 }

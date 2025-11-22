@@ -65,3 +65,11 @@ export type Cuisine = {
   region?: string;
   image?: string;
 };
+
+export type CuisineImage = {
+  id?: number;
+  type: 'CUISINE' | 'CATEGORY' | 'SUBCATEGORY';
+  name: string;
+  imageUrl: string;
+  description?: string;
+};

@@ -69,6 +69,15 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /** Get products by vendor id */
+    @GetMapping("/vendor/{vendorId}")
+    public List<ProductResponse> getByVendor(@PathVariable @Min(1) Long vendorId) {
+        return productQueryPort.findByVendorId(vendorId)
+                .stream()
+                .map(ProductResponse::from)
+                .toList();
+    }
+
     /** Create a new product */
     @PostMapping
     public ResponseEntity<ProductResponse> create(@RequestBody @Valid ProductCreateRequest req) {

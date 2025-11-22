@@ -1,6 +1,7 @@
 package com.souk.cuisine.api;
 
 import com.souk.common.domain.Cuisine;
+import com.souk.common.domain.CuisineImage;
 import com.souk.common.port.DataAccessPort;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -19,9 +20,12 @@ import java.util.stream.Collectors;
 public class CuisineController {
 
     private final DataAccessPort<Cuisine, Long> cuisinePort;
+    private final DataAccessPort<CuisineImage, Long> cuisineImagePort;
 
-    public CuisineController(DataAccessPort<Cuisine, Long> cuisinePort) {
+    public CuisineController(DataAccessPort<Cuisine, Long> cuisinePort,
+                             DataAccessPort<CuisineImage, Long> cuisineImagePort) {
         this.cuisinePort = cuisinePort;
+        this.cuisineImagePort = cuisineImagePort;
     }
 
     @GetMapping
@@ -30,7 +34,12 @@ public class CuisineController {
     }
 
     @GetMapping("/categories")
-    public List<String> listDistinctCategories() {
+    public List<CategoryWithImage> listDistinctCategories() {
+        var imagesByName = cuisineImagePort.findAll().stream()
+                .filter(img -> img.getType() == CuisineImage.Type.CATEGORY)
+                .filter(img -> img.getName() != null && !img.getName().isBlank())
+                .collect(Collectors.toMap(img -> img.getName().toLowerCase(), CuisineImage::getImageUrl, (a, b) -> a));
+
         return cuisinePort.findAll().stream()
                 .map(Cuisine::getCategory)
                 .filter(Objects::nonNull)
@@ -38,6 +47,7 @@ public class CuisineController {
                 .filter(s -> !s.isEmpty())
                 .distinct()
                 .sorted(String::compareToIgnoreCase)
+                .map(cat -> new CategoryWithImage(cat, imagesByName.getOrDefault(cat.toLowerCase(), "None")))
                 .collect(Collectors.toList());
     }
 
@@ -74,4 +84,66 @@ public class CuisineController {
                 .map(c -> { cuisinePort.deleteById(id); return ResponseEntity.noContent().<Void>build(); })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    // ------------------------------------------------------------
+    // Cuisine Images
+    // ------------------------------------------------------------
+
+    @GetMapping("/images")
+    public List<CuisineImage> listImages(
+            @RequestParam(value = "type", required = false) CuisineImage.Type type,
+            @RequestParam(value = "name", required = false) String name) {
+        return cuisineImagePort.findAll().stream()
+                .filter(img -> type == null || img.getType() == type)
+                .filter(img -> name == null || img.getName().equalsIgnoreCase(name))
+                .toList();
+    }
+
+    @PostMapping("/images")
+    public ResponseEntity<CuisineImage> createImage(@RequestBody @Valid CuisineImage req) {
+        // Basic guard: name must correspond to an existing cuisine for the given type
+        boolean exists = cuisinePort.findAll().stream().anyMatch(c -> {
+            return switch (req.getType()) {
+                case CUISINE -> c.getCuisineName() != null && c.getCuisineName().equalsIgnoreCase(req.getName());
+                case CATEGORY -> c.getCategory() != null && c.getCategory().equalsIgnoreCase(req.getName());
+                case SUBCATEGORY -> c.getSubcategory() != null && c.getSubcategory().equalsIgnoreCase(req.getName());
+            };
+        });
+        if (!exists) return ResponseEntity.badRequest().build();
+
+        CuisineImage saved = cuisineImagePort.save(req);
+        return ResponseEntity.created(URI.create("/cuisines/images/" + saved.getId())).body(saved);
+    }
+
+    @DeleteMapping("/images/{id}")
+    public ResponseEntity<Void> deleteImage(@PathVariable @Min(1) Long id) {
+        return cuisineImagePort.findById(id)
+                .map(img -> { cuisineImagePort.deleteById(id); return ResponseEntity.noContent().<Void>build(); })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/images/{id}")
+    public ResponseEntity<CuisineImage> updateImage(@PathVariable @Min(1) Long id,
+                                                    @RequestBody @Valid CuisineImage req) {
+        return cuisineImagePort.findById(id)
+                .map(existing -> {
+                    boolean exists = cuisinePort.findAll().stream().anyMatch(c -> {
+                        return switch (req.getType()) {
+                            case CUISINE -> c.getCuisineName() != null && c.getCuisineName().equalsIgnoreCase(req.getName());
+                            case CATEGORY -> c.getCategory() != null && c.getCategory().equalsIgnoreCase(req.getName());
+                            case SUBCATEGORY -> c.getSubcategory() != null && c.getSubcategory().equalsIgnoreCase(req.getName());
+                        };
+                    });
+                    if (!exists) return ResponseEntity.badRequest().<CuisineImage>build();
+                    existing.setType(req.getType());
+                    existing.setName(req.getName());
+                    existing.setImageUrl(req.getImageUrl());
+                    existing.setDescription(req.getDescription());
+                    CuisineImage saved = cuisineImagePort.save(existing);
+                    return ResponseEntity.ok(saved);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    public record CategoryWithImage(String category, String imageUrl) {}
 }

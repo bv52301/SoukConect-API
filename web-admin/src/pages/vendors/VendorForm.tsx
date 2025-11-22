@@ -51,7 +51,10 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
   // Distinct categories from cuisines service
   const catsQuery = useQuery({
     queryKey: ['cuisine-categories'],
-    queryFn: () => api<string[]>('/cuisines/categories'),
+    queryFn: async () => {
+      const res = await api<Array<{ category: string; imageUrl?: string | null }>>('/cuisines/categories');
+      return res.map(r => r.category).filter((s): s is string => !!s);
+    },
   });
 
   useEffect(() => {
