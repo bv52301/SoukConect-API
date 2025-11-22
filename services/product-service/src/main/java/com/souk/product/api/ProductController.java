@@ -199,18 +199,12 @@ public class ProductController {
             @PathVariable @Min(1) Long productId,
             @PathVariable @Min(1) Long mediaId
     ) {
-        return productPort.findById(productId)
-                .map(product -> {
-                    Optional<ProductMedia> target = product.getMedia().stream()
-                            .filter(m -> m.getId().equals(mediaId))
-                            .findFirst();
-
-                    if (target.isPresent()) {
-                        mediaPort.deleteById(mediaId);
-                        return ResponseEntity.noContent().<Void>build();
-                    }
-                    return ResponseEntity.notFound().build();
+        return mediaPort.findById(mediaId)
+                .filter(pm -> pm.getProduct() != null && pm.getProduct().getId() != null && pm.getProduct().getId().equals(productId))
+                .map(pm -> {
+                    mediaPort.deleteById(mediaId);
+                    return ResponseEntity.noContent().<Void>build();
                 })
-                .orElseGet(()->ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

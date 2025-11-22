@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, Stack, TextField, Typography, Button, CircularProgress, Autocomplete } from '@mui/material';
+import { Card, CardContent, Stack, TextField, Typography, Button, CircularProgress, Autocomplete, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import PreviewGallery from '../../components/previewgallery';
 import { fetchPreview } from '../../lib/apiClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api, Vendor } from '../../lib/apiClient';
 import { z } from 'zod';
 
@@ -24,24 +24,29 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
+export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const qc = useQueryClient();
+  const listPath = '/vendors';
 
   const { data } = useQuery({
     queryKey: ['vendor', id],
     queryFn: () => api<Vendor>(`/vendors/${id}`),
-    enabled: mode === 'edit' && !!id,
+    enabled: mode !== 'create' && !!id,
   });
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors, isDirty }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema) });
   const values = watch();
   const imageValue = values.image;
   const shrinkIfFilled = (value?: string | null) => (typeof value === 'string' && value.trim().length > 0 ? { shrink: true } : undefined);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [items, setItems] = useState<Array<{url:string; mimeType?: string; sizeBytes?: number}>>([]);
   const [supportedCats, setSupportedCats] = useState<string[]>([]);
+  const [initialSupportedCats, setInitialSupportedCats] = useState<string[]>([]);
+  const [noChangesOpen, setNoChangesOpen] = useState(false);
+  const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const [afterSaveDestination, setAfterSaveDestination] = useState<'home' | 'list'>('list');
 
   // Distinct categories from cuisines service
   const catsQuery = useQuery({
@@ -65,8 +70,21 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
       });
       // Hydrate supported categories from array or map
       const sc: any = data.supportedCategories;
-      if (Array.isArray(sc)) setSupportedCats(sc.filter((s:any)=> typeof s === 'string'));
-      else if (sc && typeof sc === 'object') setSupportedCats(Object.keys(sc));
+      if (Array.isArray(sc)) {
+        const hydrated = sc.filter((s:any)=> typeof s === 'string');
+        setSupportedCats(hydrated);
+        setInitialSupportedCats(hydrated);
+      }
+      else if (sc && typeof sc === 'object') {
+        const hydrated = Object.keys(sc);
+        setSupportedCats(hydrated);
+        setInitialSupportedCats(hydrated);
+      } else {
+        setSupportedCats([]);
+        setInitialSupportedCats([]);
+      }
+    } else {
+      setInitialSupportedCats([]);
     }
   }, [data, reset]);
 
@@ -93,27 +111,85 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vendors'] });
+      navigate(listPath);
+      setAfterSaveDestination('list');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => api<void>(`/vendors/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['vendors'] });
       navigate('/vendors');
     },
   });
 
+  const catsChanged = JSON.stringify([...supportedCats].sort()) !== JSON.stringify([...initialSupportedCats].sort());
+  const hasUnsavedChanges = isDirty || catsChanged;
+
+  const submitWithDestination = (destination: 'home' | 'list') => {
+    setAfterSaveDestination(destination);
+    handleSubmit((values) => {
+      if (mode === 'edit' && !hasUnsavedChanges) {
+        setNoChangesOpen(true);
+        return;
+      }
+      mutate.mutate(values);
+    })();
+  };
+
+  const handleBack = () => {
+    if (mode === 'edit' && hasUnsavedChanges) {
+      setUnsavedOpen(true);
+    } else {
+      navigate(listPath);
+    }
+  };
+
   return (
     <Stack spacing={2}>
-      <Typography variant="h5">{mode === 'create' ? 'Create Vendor' : `Edit Vendor #${id}`}</Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5">{mode === 'create' ? 'Create Vendor' : `Edit Vendor #${id}`}</Typography>
+        <Button variant="text" onClick={handleBack}>Back</Button>
+      </Stack>
       <Card>
         <CardContent>
-          <form onSubmit={handleSubmit(v => mutate.mutate(v))}>
+          <form onSubmit={(e) => { e.preventDefault(); submitWithDestination('list'); }}>
             <Stack spacing={2}>
-              <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} InputLabelProps={shrinkIfFilled(values.name)} />
-              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} InputLabelProps={shrinkIfFilled(values.description)} />
-              <TextField label="Email" {...register('email')} error={!!errors.email} helperText={errors.email?.message} InputLabelProps={shrinkIfFilled(values.email)} />
-              <TextField label="Phone" {...register('phoneNumber')} InputLabelProps={shrinkIfFilled(values.phoneNumber)} />
-              <TextField label="Address 1" {...register('address1')} InputLabelProps={shrinkIfFilled(values.address1)} />
-              <TextField label="Address 2" {...register('address2')} InputLabelProps={shrinkIfFilled(values.address2)} />
-              <TextField label="State" {...register('state')} InputLabelProps={shrinkIfFilled(values.state)} />
-              <TextField label="Pincode" {...register('pincode')} InputLabelProps={shrinkIfFilled(values.pincode)} />
-              <TextField label="Contact Name" {...register('contactName')} InputLabelProps={shrinkIfFilled(values.contactName)} />
-              <TextField label="Image URL" {...register('image')} InputLabelProps={shrinkIfFilled(values.image)} />
+              <TextField label="Name" {...register('name')} disabled={mode === 'view'} error={!!errors.name} helperText={errors.name?.message} InputLabelProps={shrinkIfFilled(values.name)} />
+              <TextField label="Description" {...register('description')} disabled={mode === 'view'} multiline minRows={3} inputProps={{ maxLength: 1000 }} InputLabelProps={shrinkIfFilled(values.description)} />
+              <TextField label="Email" {...register('email')} disabled={mode === 'view'} error={!!errors.email} helperText={errors.email?.message} InputLabelProps={shrinkIfFilled(values.email)} />
+              <TextField label="Phone" {...register('phoneNumber')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.phoneNumber)} />
+              <TextField label="Address 1" {...register('address1')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.address1)} />
+              <TextField label="Address 2" {...register('address2')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.address2)} />
+              <TextField label="State" {...register('state')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.state)} />
+              <TextField label="Pincode" {...register('pincode')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.pincode)} />
+              <TextField label="Contact Name" {...register('contactName')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.contactName)} />
+              <TextField label="Image URL" {...register('image')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.image)} />
+              {imageValue ? (
+                <Card variant="outlined">
+                  <CardContent sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <img
+                      src={imageValue}
+                      alt="Vendor"
+                      style={{ maxHeight: 180, maxWidth: '100%', objectFit: 'contain' }}
+                      onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </CardContent>
+                </Card>
+              ) : null}
+              {mode === 'edit' && imageValue ? (
+                <Button
+                  color="error"
+                  variant="outlined"
+                  onClick={() => {
+                    setValue('image', '', { shouldDirty: true });
+                    setItems([]);
+                  }}
+                >
+                  Delete Image
+                </Button>
+              ) : null}
               <Button
                 variant="outlined"
                 onClick={async () => {
@@ -127,7 +203,7 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
                     setPreviewOpen(true);
                   }
                 }}
-                disabled={!imageValue}
+                disabled={!imageValue || mode === 'view'}
               >Preview</Button>
               <PreviewGallery open={previewOpen} onClose={() => setPreviewOpen(false)} items={items.map(it => ({...it, onDelete: () => { setValue('image',''); setPreviewOpen(false); setItems([]); }}))} />
               <Autocomplete
@@ -136,14 +212,48 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' }) {
                 value={supportedCats}
                 onChange={(_, v) => setSupportedCats(v)}
                 renderInput={(params) => <TextField {...params} label="Supported Categories" placeholder="Select categories" />}
+                disabled={mode === 'view'}
               />
-              <Button type="submit" variant="contained" disabled={mutate.isPending} endIcon={mutate.isPending ? <CircularProgress size={16} /> : undefined}>
-                {mode === 'create' ? 'Create' : 'Save'}
-              </Button>
+              {mode !== 'view' ? (
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <Button type="submit" variant="contained" disabled={mutate.isPending || deleteMutation.isPending} endIcon={mutate.isPending ? <CircularProgress size={16} /> : undefined}>
+                    {mode === 'create' ? 'Create' : 'Save'}
+                  </Button>
+                  {mode === 'edit' && id ? (
+                    <Button color="error" variant="outlined" disabled={deleteMutation.isPending || mutate.isPending} onClick={() => { if (window.confirm('Delete this vendor?')) deleteMutation.mutate(); }}>
+                      Delete
+                    </Button>
+                  ) : null}
+                </Stack>
+              ) : (
+                <Button variant="outlined" component={Link} to={`/vendors/${id}`} >
+                  Edit
+                </Button>
+              )}
             </Stack>
           </form>
         </CardContent>
       </Card>
+      <Dialog open={noChangesOpen} onClose={() => setNoChangesOpen(false)}>
+        <DialogTitle>No items edited</DialogTitle>
+        <DialogContent>
+          <DialogContentText>No fields were changed. Nothing to save.</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNoChangesOpen(false)}>Close</Button>
+          <Button onClick={() => navigate(listPath)}>Back to Vendors</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={unsavedOpen} onClose={() => setUnsavedOpen(false)}>
+        <DialogTitle>There are unsaved items</DialogTitle>
+        <DialogContent>
+          <DialogContentText>There are unsaved items do you want to save them?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setUnsavedOpen(false); navigate(listPath); }}>No</Button>
+          <Button onClick={() => { setUnsavedOpen(false); submitWithDestination('home'); }}>Yes</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

@@ -78,6 +78,7 @@ public class VendorController {
         return vendorPort.findById(id)
                 .map(existing -> {
                     existing.setName(req.name());
+                    existing.setDescription(req.description());
                     existing.setSupportedCategories(req.supportedCategories());
                     existing.setImage(req.image());
                     existing.setAddress1(req.address1());

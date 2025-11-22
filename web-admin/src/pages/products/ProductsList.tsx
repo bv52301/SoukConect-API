@@ -47,13 +47,14 @@ export default function ProductsList() {
                     ) : '-'}</TableCell>
                     <TableCell>{p.name}</TableCell>
                     <TableCell>{p.sku}</TableCell>
-                    <TableCell>{p.price}</TableCell>
-                    <TableCell>{p.vendorId}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" component={Link} to={`/products/${p.id}`}>Edit</Button>
-                      <Button size="small" color="error" onClick={() => p.id && del.mutate(p.id)} disabled={del.isPending}>Delete</Button>
-                    </TableCell>
-                  </TableRow>
+                  <TableCell>{p.price}</TableCell>
+                  <TableCell>{p.vendorId}</TableCell>
+                  <TableCell align="right">
+                    <Button size="small" component={Link} to={`/products/${p.id}/view`}>View</Button>
+                    <Button size="small" component={Link} to={`/products/${p.id}`}>Edit</Button>
+                    <Button size="small" color="error" onClick={() => p.id && del.mutate(p.id)} disabled={del.isPending}>Delete</Button>
+                  </TableCell>
+                </TableRow>
                 ))}
               </TableBody>
             </Table>

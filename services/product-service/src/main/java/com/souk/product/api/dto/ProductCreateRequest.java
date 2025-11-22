@@ -16,6 +16,7 @@ public record ProductCreateRequest(
         @NotNull BigDecimal price,
         @NotNull Long vendorId,
         Boolean available,
+        String description,
         JsonNode categoryDetails,   // expected: array of objects; single object will be wrapped
         JsonNode schedule,
         List<MediaRequest> media
@@ -29,6 +30,7 @@ public record ProductCreateRequest(
         p.setPrice(price);
         p.setVendorId(vendorId);
         p.setAvailable(available != null ? available : Boolean.TRUE);
+        p.setDescription(description);
         p.setCategoryDetails(normalizeCategoryPayload(categoryDetails));
         p.setSchedule(schedule);
 

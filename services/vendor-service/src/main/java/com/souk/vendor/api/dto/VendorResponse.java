@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record VendorResponse(
         Long vendorId,
         String name,
+        String description,
         JsonNode supportedCategories,
         String image,
         String address1,
@@ -24,6 +25,7 @@ public record VendorResponse(
         return new VendorResponse(
                 v.getVendorId(),
                 v.getName(),
+                v.getDescription(),
                 v.getSupportedCategories(),
                 v.getImage(),
                 v.getAddress1(),

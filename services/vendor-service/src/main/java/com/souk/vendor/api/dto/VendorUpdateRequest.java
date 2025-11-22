@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public record VendorUpdateRequest(
         String name,
+        String description,
         JsonNode supportedCategories,
         String image,
         String address1,

@@ -53,11 +53,12 @@ export default function CuisinesList() {
                       ) : '-'}
                     </TableCell>
                     <TableCell>{c.cuisineName}</TableCell>
-                    <TableCell>{c.category}</TableCell>
-                    <TableCell>{c.subcategory}</TableCell>
-                    <TableCell>{c.region}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" component={Link} to={`/cuisines/${c.id}`}>Edit</Button>
+                  <TableCell>{c.category}</TableCell>
+                  <TableCell>{c.subcategory}</TableCell>
+                  <TableCell>{c.region}</TableCell>
+                  <TableCell align="right">
+                    <Button size="small" component={Link} to={`/cuisines/${c.id}/view`}>View</Button>
+                    <Button size="small" component={Link} to={`/cuisines/${c.id}`}>Edit</Button>
                       <Button size="small" color="error" onClick={() => c.id && del.mutate(c.id)} disabled={del.isPending}>Delete</Button>
                     </TableCell>
                   </TableRow>

@@ -21,6 +21,9 @@ public class Vendor {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(length = 1000)
+    private String description;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "supportedCategories", columnDefinition = "json")
     private JsonNode supportedCategories;
@@ -61,6 +64,9 @@ public class Vendor {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
     public JsonNode getSupportedCategories() { return supportedCategories; }
     public void setSupportedCategories(JsonNode supportedCategories) { this.supportedCategories = supportedCategories; }

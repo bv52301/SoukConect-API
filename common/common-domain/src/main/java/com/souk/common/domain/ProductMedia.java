@@ -1,5 +1,6 @@
 package com.souk.common.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -21,6 +22,7 @@ public class ProductMedia {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @JsonIgnoreProperties(value = { "media" }, allowSetters = true)
     private Product product;
 
     @Enumerated(EnumType.STRING)

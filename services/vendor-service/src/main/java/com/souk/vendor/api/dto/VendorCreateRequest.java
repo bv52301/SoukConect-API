@@ -5,6 +5,7 @@ import com.souk.common.domain.Vendor;
 
 public record VendorCreateRequest(
         String name,
+        String description,
         JsonNode supportedCategories,
         String image,
         String address1,
@@ -19,6 +20,7 @@ public record VendorCreateRequest(
     public Vendor toDomain() {
         Vendor v = new Vendor();
         v.setName(name);
+        v.setDescription(description);
         v.setSupportedCategories(supportedCategories);
         v.setImage(image);
         v.setAddress1(address1);

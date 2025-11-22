@@ -43,10 +43,11 @@ export default function CustomersList() {
                     <TableCell>{c.id}</TableCell>
                     <TableCell>{c.firstName}</TableCell>
                     <TableCell>{c.lastName}</TableCell>
-                    <TableCell>{c.email}</TableCell>
-                    <TableCell>{c.phone}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" component={Link} to={`/customers/${c.id}`}>Edit</Button>
+                  <TableCell>{c.email}</TableCell>
+                  <TableCell>{c.phone}</TableCell>
+                  <TableCell align="right">
+                    <Button size="small" component={Link} to={`/customers/${c.id}/view`}>View</Button>
+                    <Button size="small" component={Link} to={`/customers/${c.id}`}>Edit</Button>
                       <Button size="small" color="error" onClick={() => c.id && del.mutate(c.id)} disabled={del.isPending}>Delete</Button>
                     </TableCell>
                   </TableRow>
@@ -59,4 +60,3 @@ export default function CustomersList() {
     </Stack>
   );
 }
-

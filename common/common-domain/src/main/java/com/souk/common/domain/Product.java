@@ -1,5 +1,6 @@
 package com.souk.common.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 
@@ -33,6 +34,9 @@ public class Product {
     @Column(name = "is_available", nullable = false)
     private Boolean available;
 
+    @Column(name = "description", length = 1000)
+    private String description;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "category_details", columnDefinition = "json")
     private JsonNode categoryDetails;
@@ -48,6 +52,7 @@ public class Product {
     private LocalDateTime scheduleUpdated;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "product" }, allowSetters = true)
     private List<ProductMedia> media;
 
     // Getters and Setters
@@ -68,6 +73,9 @@ public class Product {
 
     public Boolean getAvailable() { return available; }
     public void setAvailable(Boolean available) { this.available = available; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
     public JsonNode getCategoryDetails() { return categoryDetails; }
     public void setCategoryDetails(JsonNode categoryDetails) { this.categoryDetails = categoryDetails; }

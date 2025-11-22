@@ -17,6 +17,7 @@ public record ProductUpdateRequest(
         BigDecimal price,
         Long vendorId,
         Boolean available,
+        String description,
         JsonNode categoryDetails,   // expected: array of objects; single object will be wrapped
         JsonNode schedule
 ) {
@@ -28,6 +29,7 @@ public record ProductUpdateRequest(
         if (price != null) existing.setPrice(price);
         if (vendorId != null) existing.setVendorId(vendorId);
         if (available != null) existing.setAvailable(available);
+        if (description != null) existing.setDescription(description);
         if (categoryDetails != null) {
             existing.setCategoryDetails(normalizeCategoryPayload(categoryDetails));
         }

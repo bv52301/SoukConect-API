@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, FormControlLabel, Stack, Switch, TextField, Typography, Button, CircularProgress, Divider, IconButton, Autocomplete } from '@mui/material';
+import { Card, CardContent, FormControlLabel, Stack, Switch, TextField, Typography, Button, CircularProgress, Divider, IconButton, Autocomplete, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api, Product, Vendor, Cuisine } from '../../lib/apiClient';
 import { z } from 'zod';
 import PreviewGallery, { PreviewItem } from '../../components/previewgallery';
@@ -23,15 +23,16 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
+export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view' }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const qc = useQueryClient();
+  const listPath = '/products';
 
   const { data } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api<Product>(`/products/${id}`),
-    enabled: mode === 'edit' && !!id,
+    enabled: mode !== 'create' && !!id,
   });
 
   // Vendors list for selection (remote search by q)
@@ -52,8 +53,21 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
   const mediaQuery = useQuery({
     queryKey: ['product-media', id],
     queryFn: () => api<any[]>(`/products/${id}/media`),
-    enabled: mode === 'edit' && !!id,
+    enabled: mode !== 'create' && !!id,
   });
+  const mediaItems = useMemo(() => {
+    const normalize = (m: any) => ({
+      id: m.id,
+      mediaType: m.mediaType || m.type || 'IMAGE',
+      mediaUrl: m.mediaUrl || m.url,
+      description: m.description,
+    });
+    const fromQuery = (mediaQuery.data || []).map(normalize).filter(m => !!m.mediaUrl);
+    if (fromQuery.length) return fromQuery;
+    const embedded = (data as any)?.media;
+    if (Array.isArray(embedded)) return embedded.map(normalize).filter(m => !!m.mediaUrl);
+    return [];
+  }, [mediaQuery.data, data]);
 
   // Cuisines for Category Details selections
   const cuisinesQuery = useQuery({
@@ -64,9 +78,17 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
   const emptyEntry: CategoryEntry = { cuisineName: null, categories: [], subCategories: [], regionCategory: null };
   const [categoryEntries, setCategoryEntries] = useState<CategoryEntry[]>([emptyEntry]);
 
-  const [files, setFiles] = useState<FileList | null>(null);
-  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [mediaUrls, setMediaUrls] = useState('');
+  const [initialMediaUrls, setInitialMediaUrls] = useState('');
+  const [newMediaUrl, setNewMediaUrl] = useState('');
+  const pendingUrlEntries = useMemo(() => {
+    const existing = new Set(mediaItems.map(m => m.mediaUrl));
+    return mediaUrls
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .filter(u => !existing.has(u));
+  }, [mediaUrls, mediaItems]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewItemsState, setPreviewItemsState] = useState<PreviewItem[]>([]);
   // Schedules state
@@ -75,9 +97,15 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
   const [weekly, setWeekly] = useState<WeeklyItem[]>([]);
   const [datesArr, setDatesArr] = useState<DateItem[]>([]);
   const [blackoutArr, setBlackoutArr] = useState<string[]>([]);
+  const [noChangesOpen, setNoChangesOpen] = useState(false);
+  const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const [afterSaveDestination, setAfterSaveDestination] = useState<'home' | 'list'>('list');
   const dowOptions = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const categorySyncInitialized = useRef(false);
+  const scheduleSyncInitialized = useRef(false);
 
-  const { register, handleSubmit, control, formState: { errors }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { available: true, categoryDetails: '' } });
+  const { register, handleSubmit, control, formState: { errors, isDirty }, reset, watch, setValue } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { available: true, categoryDetails: '' } });
+  const hasUnsavedChanges = isDirty || mediaUrls.trim() !== initialMediaUrls.trim();
   const values = watch();
   const shrinkIfFilled = (value: unknown) => {
     if (value === undefined || value === null) return undefined;
@@ -97,11 +125,16 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
         categoryDetails: data.categoryDetails ? JSON.stringify(data.categoryDetails, null, 2) : '',
         schedule: data.schedule ? JSON.stringify(data.schedule, null, 2) : '',
       });
+      const embeddedMedia = Array.isArray((data as any)?.media) ? (data as any).media : [];
+      const urlsFromMedia = embeddedMedia.map((m: any) => m.mediaUrl || m.url).filter(Boolean).join('\n');
+      setMediaUrls(urlsFromMedia);
+      setInitialMediaUrls(urlsFromMedia);
       // Pre-populate category selections from categoryDetails (array of objects)
       const normalized = normalizeCategoryDetailsArray(data?.categoryDetails);
+      categorySyncInitialized.current = false;
       if (normalized && normalized.length) {
         setCategoryEntries(normalized);
-        setValue('categoryDetails', JSON.stringify(toCategoryPayloadArray(normalized), null, 2));
+        setValue('categoryDetails', JSON.stringify(toCategoryPayloadArray(normalized), null, 2), { shouldDirty: false, shouldValidate: false });
       }
       // Pre-populate schedules
       try {
@@ -121,6 +154,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
           }
         }
       } catch {}
+      scheduleSyncInitialized.current = false;
     }
   }, [data, reset]);
 
@@ -128,22 +162,41 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
   useEffect(() => {
     const cd = toCategoryPayloadArray(categoryEntries);
     if (cd && cd.length) {
-      setValue('categoryDetails', JSON.stringify(cd, null, 2), { shouldDirty: true, shouldValidate: false });
+      setValue('categoryDetails', JSON.stringify(cd, null, 2), { shouldDirty: categorySyncInitialized.current, shouldValidate: false });
     } else {
-      setValue('categoryDetails', '', { shouldDirty: true, shouldValidate: false });
+      setValue('categoryDetails', '', { shouldDirty: categorySyncInitialized.current, shouldValidate: false });
     }
+    categorySyncInitialized.current = true;
   }, [categoryEntries, setValue]);
 
   // Auto-update schedule JSON from UI rows
   useEffect(() => {
     const sc = buildSchedule(weekly, datesArr, blackoutArr);
-    if (sc) setValue('schedule', JSON.stringify(sc, null, 2), { shouldDirty: true, shouldValidate: false });
-    else setValue('schedule', '', { shouldDirty: true, shouldValidate: false });
+    if (sc) setValue('schedule', JSON.stringify(sc, null, 2), { shouldDirty: scheduleSyncInitialized.current, shouldValidate: false });
+    else setValue('schedule', '', { shouldDirty: scheduleSyncInitialized.current, shouldValidate: false });
+    scheduleSyncInitialized.current = true;
   }, [weekly, datesArr, blackoutArr, setValue]);
 
   const mutate = useMutation({
     mutationFn: async (values: FormValues) => {
       const categoryPayload = toCategoryPayloadArray(categoryEntries) ?? parseJsonSafe(values.categoryDetails);
+      const urlLines = mediaUrls.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const existingUrls = mediaItems.map(m => m.mediaUrl).filter(Boolean);
+      const newUrls = urlLines.filter(u => !existingUrls.includes(u));
+
+      const postNewMedia = async (productId: number, urls: string[]) => {
+        await Promise.all(urls.map(url =>
+          api<Product>(`/products/${productId}/media`, {
+            method: 'POST',
+            body: JSON.stringify({
+              product: { id: productId },
+              mediaUrl: url,
+              mediaType: 'IMAGE',
+              storageProvider: 'LOCAL',
+            }),
+          })
+        ));
+      };
 
       const payload: Product = {
         name: values.name,
@@ -156,34 +209,80 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
         schedule: parseJsonSafe(values.schedule),
       };
       if (mode === 'create') {
-        const created = await api<Product>('/products', { method: 'POST', body: JSON.stringify({ ...payload, media: parseMediaUrls(mediaUrls) }) });
-        // After creating, upload any selected files
-        if (files && files.length) await uploadFiles(created.id! , files);
+        const created = await api<Product>('/products', { method: 'POST', body: JSON.stringify(payload) });
+        if (created?.id && newUrls.length) await postNewMedia(created.id, newUrls);
         return created;
       } else {
         const updated = await api<Product>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-        if (files && files.length) await uploadFiles(Number(id), files);
+        if (id && newUrls.length) await postNewMedia(Number(id), newUrls);
         return updated;
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
-      if (mode === 'edit' && id) qc.invalidateQueries({ queryKey: ['product-media', id] });
-      navigate('/products');
+      if (mode === 'edit' && id) {
+        qc.invalidateQueries({ queryKey: ['product-media', id] });
+        qc.invalidateQueries({ queryKey: ['product', id] });
+      }
+      navigate(listPath);
+      setAfterSaveDestination('list');
     },
   });
 
+  const submitWithDestination = (destination: 'home' | 'list') => {
+    setAfterSaveDestination(destination);
+    handleSubmit((formValues) => {
+      if (mode === 'edit' && !hasUnsavedChanges) {
+        setNoChangesOpen(true);
+        return;
+      }
+      mutate.mutate(formValues);
+    })();
+  };
+
+  const handleBack = () => {
+    if (mode === 'edit' && hasUnsavedChanges) {
+      setUnsavedOpen(true);
+    } else {
+      navigate(listPath);
+    }
+  };
+  const handleAddUrl = () => {
+    const url = newMediaUrl.trim();
+    if (!url) return;
+    setMediaUrls(prev => {
+      const trimmed = prev.trim();
+      return trimmed ? `${trimmed}\n${url}` : url;
+    });
+    setNewMediaUrl('');
+  };
+  const handleRemoveUrl = (url: string) => {
+    const lines = mediaUrls.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    setMediaUrls(lines.filter(l => l !== url).join('\n'));
+    setInitialMediaUrls(prev => prev.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).filter(l=> l !== url).join('\n'));
+  };
+  const handleDeleteExistingMedia = async (mediaId?: number, mediaUrl?: string) => {
+    if (!id || !mediaId) return;
+    await api<void>(`/products/${id}/media/${mediaId}`, { method: 'DELETE' });
+    qc.invalidateQueries({ queryKey: ['product-media', id] });
+    qc.invalidateQueries({ queryKey: ['product', id] });
+    if (mediaUrl) handleRemoveUrl(mediaUrl);
+  };
+
   return (
     <Stack spacing={2}>
-      <Typography variant="h5">{mode === 'create' ? 'Create Product' : `Edit Product #${id}`}</Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5">{mode === 'create' ? 'Create Product' : `Edit Product #${id}`}</Typography>
+        <Button variant="text" onClick={handleBack}>Back</Button>
+      </Stack>
       <Card>
         <CardContent>
-          <form onSubmit={handleSubmit(v => mutate.mutate(v))}>
+          <form onSubmit={(e) => { e.preventDefault(); submitWithDestination('list'); }}>
             <Stack spacing={2}>
-              <TextField label="Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} InputLabelProps={shrinkIfFilled(values.name)} />
-              <TextField label="SKU" {...register('sku')} error={!!errors.sku} helperText={errors.sku?.message} InputLabelProps={shrinkIfFilled(values.sku)} />
-              <TextField label="Price" type="number" inputProps={{ step: '0.01' }} {...register('price')} error={!!errors.price} helperText={errors.price?.message} InputLabelProps={shrinkIfFilled(values.price)} />
-              <TextField label="Description" {...register('description')} multiline minRows={3} inputProps={{ maxLength: 1000 }} InputLabelProps={shrinkIfFilled(values.description)} />
+              <TextField label="Name" {...register('name')} disabled={mode === 'view'} error={!!errors.name} helperText={errors.name?.message} InputLabelProps={shrinkIfFilled(values.name)} />
+              <TextField label="SKU" {...register('sku')} disabled={mode === 'view'} error={!!errors.sku} helperText={errors.sku?.message} InputLabelProps={shrinkIfFilled(values.sku)} />
+              <TextField label="Price" type="number" inputProps={{ step: '0.01' }} {...register('price')} disabled={mode === 'view'} error={!!errors.price} helperText={errors.price?.message} InputLabelProps={shrinkIfFilled(values.price)} />
+              <TextField label="Description" {...register('description')} disabled={mode === 'view'} multiline minRows={3} inputProps={{ maxLength: 1000 }} InputLabelProps={shrinkIfFilled(values.description)} />
               <Controller
                 name="vendorId"
                 render={({ field }) => (
@@ -198,11 +297,12 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
                     renderInput={(params) => (
                       <TextField {...params} label="Vendor" error={!!errors.vendorId} helperText={errors.vendorId?.message || 'Type to search; showing default list'} placeholder="Search vendor" />
                     )}
+                    disabled={mode === 'view'}
                   />
                 )}
                 control={control}
               />
-              <FormControlLabel control={<Switch checked={!!watch('available')} onChange={(_, c) => setValue('available', c)} />} label="Available" />
+              <FormControlLabel control={<Switch checked={!!watch('available')} onChange={(_, c) => setValue('available', c)} disabled={mode === 'view'} />} label="Available" />
               <Typography variant="subtitle1">Category Details</Typography>
               <Stack spacing={2}>
                 {categoryEntries.map((entry, idx) => (
@@ -267,9 +367,9 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
               <Divider />
               <Typography variant="subtitle1">Schedules</Typography>
               <Stack direction="row" spacing={1}>
-                <Button size="small" variant="outlined" onClick={() => setWeekly(w => [...w, { day_of_week: [], start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])}>+ Weekly</Button>
-                <Button size="small" variant="outlined" onClick={() => setDatesArr(d => [...d, { date: '', start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])}>+ Date</Button>
-                <Button size="small" variant="outlined" onClick={() => setBlackoutArr(b => [...b, ''])}>+ Blackout</Button>
+                <Button size="small" variant="outlined" onClick={() => setWeekly(w => [...w, { day_of_week: [], start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Weekly</Button>
+                <Button size="small" variant="outlined" onClick={() => setDatesArr(d => [...d, { date: '', start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Date</Button>
+                <Button size="small" variant="outlined" onClick={() => setBlackoutArr(b => [...b, ''])} disabled={mode === 'view'}>+ Blackout</Button>
               </Stack>
 
               {/* Weekly rows */}
@@ -287,7 +387,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
                   <TextField sx={{ width: 130 }} type="time" label="End" value={w.end} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
                   <TextField sx={{ width: 120 }} type="number" label="Stock" value={w.stock} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, stock: e.target.value } : it))} />
                   <TextField sx={{ minWidth: 180 }} label="Timezone" value={w.tz} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
-                  <IconButton aria-label="remove" onClick={()=> setWeekly(arr => arr.filter((_,i)=> i!==idx))}><DeleteIcon /></IconButton>
+                  <IconButton aria-label="remove" onClick={()=> setWeekly(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
                 </Stack>
               ))}
 
@@ -299,7 +399,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
                   <TextField sx={{ width: 130 }} type="time" label="End" value={d.end} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
                   <TextField sx={{ width: 120 }} type="number" label="Stock" value={d.stock} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, stock: e.target.value } : it))} />
                   <TextField sx={{ minWidth: 180 }} label="Timezone" value={d.tz} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
-                  <IconButton aria-label="remove" onClick={()=> setDatesArr(arr => arr.filter((_,i)=> i!==idx))}><DeleteIcon /></IconButton>
+                  <IconButton aria-label="remove" onClick={()=> setDatesArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
                 </Stack>
               ))}
 
@@ -307,29 +407,32 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
               {blackoutArr.map((b, idx) => (
                 <Stack key={`b-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
                   <TextField sx={{ width: 170 }} type="date" label="Blackout date" value={b} onChange={e=> setBlackoutArr(arr => arr.map((it,i)=> i===idx ? e.target.value : it))} />
-                  <IconButton aria-label="remove" onClick={()=> setBlackoutArr(arr => arr.filter((_,i)=> i!==idx))}><DeleteIcon /></IconButton>
+                  <IconButton aria-label="remove" onClick={()=> setBlackoutArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
                 </Stack>
               ))}
               <TextField label="schedule (JSON)" {...register('schedule')} multiline minRows={4} InputLabelProps={shrinkIfFilled(values.schedule)} />
               <Divider />
               <Typography variant="subtitle1">Media</Typography>
-              {mode === 'create' && (
+              {mode !== 'view' && (
                 <TextField label="Media URLs (one per line)" value={mediaUrls} onChange={e => setMediaUrls(e.target.value)} multiline minRows={3} placeholder="https://...\nhttps://..." />
               )}
-              <input type="file" multiple onChange={e => { setFiles(e.target.files); const arr = Array.from(e.target.files || []).map(f => URL.createObjectURL(f)); setFilePreviews(arr); }} />
+              {mode !== 'view' && (
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }}>
+                  <TextField label="Add media URL" value={newMediaUrl} onChange={e => setNewMediaUrl(e.target.value)} placeholder="https://..." fullWidth />
+                  <Button variant="outlined" onClick={handleAddUrl} disabled={!newMediaUrl.trim()}>+ Add</Button>
+                </Stack>
+              )}
               <Button
                 variant="outlined"
                 onClick={async () => {
                   const baseItems: PreviewItem[] = [];
-                  // Existing media
-                  if (mediaQuery.data) baseItems.push(...mediaQuery.data.map((m:any)=>({
+                  // Existing media (from query or embedded)
+                  if (mediaItems.length) baseItems.push(...mediaItems.map((m:any)=>({
                     url: m.mediaUrl as string,
                     type: m.mediaType==='VIDEO'?'video':'image',
                     title: m.description as string,
-                    onDelete: async () => { await api<void>(`/products/${id}/media/${m.id}`, { method: 'DELETE' }); qc.invalidateQueries({ queryKey: ['product-media', id] }); }
+                    onDelete: async () => { await handleDeleteExistingMedia(m.id, m.mediaUrl); }
                   } as PreviewItem)));
-                  // Selected files
-                  if (filePreviews && filePreviews.length) baseItems.push(...filePreviews.map(u=>({url:u})));
                   // URLs entered (fetch copies via backend)
                   const urls = mediaUrls.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
                   const fetched: PreviewItem[] = [];
@@ -341,33 +444,72 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
                   setPreviewItemsState(all);
                   setPreviewOpen(true);
                 }}
-                disabled={!(mediaUrls?.trim() || (mediaQuery.data && mediaQuery.data.length) || (filePreviews && filePreviews.length))}
+                disabled={mode === 'view' || !(mediaUrls?.trim() || mediaItems.length)}
               >Preview</Button>
               <PreviewGallery open={previewOpen} onClose={() => setPreviewOpen(false)} items={previewItemsState} />
-              {mode === 'edit' && mediaQuery.data && (
+              {mode !== 'create' && mediaItems.length > 0 && (
                 <Stack spacing={1}>
-                  {mediaQuery.data.map((m: any) => (
-                    <Stack key={m.id} direction="row" spacing={2} alignItems="center">
+                  {mediaItems.map((m: any) => (
+                    <Stack key={m.id ?? m.mediaUrl} direction="row" spacing={2} alignItems="center">
                       {m.mediaType === 'VIDEO' ? (
                         <video src={m.mediaUrl} style={{ maxHeight: 60 }} controls />
                       ) : (
                         <img src={m.mediaUrl} alt={m.description || ''} style={{ maxHeight: 60 }} onError={(ev)=>{(ev.currentTarget as HTMLImageElement).style.display='none';}} />
                       )}
                       <Typography variant="body2" sx={{ flex: 1 }}>{m.mediaType} - {m.mediaUrl}</Typography>
-                      <IconButton size="small" aria-label="delete" onClick={async ()=>{ await api<void>(`/products/${id}/media/${m.id}`, { method: 'DELETE' }); qc.invalidateQueries({ queryKey: ['product-media', id] }); }}>
+                      <IconButton size="small" aria-label="delete" onClick={async ()=>{ await handleDeleteExistingMedia(m.id, m.mediaUrl); }} disabled={mode === 'view'}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Stack>
                   ))}
                 </Stack>
               )}
-              <Button type="submit" variant="contained" disabled={mutate.isPending} endIcon={mutate.isPending ? <CircularProgress size={16} /> : undefined}>
-                {mode === 'create' ? 'Create' : 'Save'}
-              </Button>
+              {mode !== 'view' && pendingUrlEntries.length > 0 && (
+                <Stack spacing={1}>
+                  {pendingUrlEntries.map((url, idx) => (
+                    <Stack key={`${url}-${idx}`} direction="row" spacing={2} alignItems="center">
+                      <img src={url} alt={url} style={{ maxHeight: 60, maxWidth: 80, objectFit: 'contain' }} onError={(ev)=>{(ev.currentTarget as HTMLImageElement).style.display='none';}} />
+                      <Typography variant="body2" sx={{ flex: 1 }}>New - {url}</Typography>
+                      <IconButton size="small" aria-label="delete" onClick={() => handleRemoveUrl(url)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
+              {mode !== 'view' ? (
+                <Button type="submit" variant="contained" disabled={mutate.isPending} endIcon={mutate.isPending ? <CircularProgress size={16} /> : undefined}>
+                  {mode === 'create' ? 'Create' : 'Save'}
+                </Button>
+              ) : (
+                <Button variant="outlined" component={Link} to={`/products/${id}`} >
+                  Edit
+                </Button>
+              )}
             </Stack>
           </form>
         </CardContent>
       </Card>
+      <Dialog open={noChangesOpen} onClose={() => setNoChangesOpen(false)}>
+        <DialogTitle>No items edited</DialogTitle>
+        <DialogContent>
+          <DialogContentText>No fields were changed. Nothing to save.</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNoChangesOpen(false)}>Close</Button>
+          <Button onClick={() => navigate(listPath)}>Back to Products</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={unsavedOpen} onClose={() => setUnsavedOpen(false)}>
+        <DialogTitle>There are unsaved items</DialogTitle>
+        <DialogContent>
+          <DialogContentText>There are unsaved items do you want to save them?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setUnsavedOpen(false); navigate(listPath); }}>No</Button>
+          <Button onClick={() => { setUnsavedOpen(false); submitWithDestination('home'); }}>Yes</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
@@ -375,39 +517,6 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' }) {
 function parseJsonSafe(s?: string) {
   if (!s) return undefined;
   try { return JSON.parse(s); } catch { return undefined; }
-}
-
-function parseMediaUrls(s: string) {
-  const lines = s.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return undefined as unknown as any;
-  return lines.map(url => ({ mediaUrl: url }));
-}
-
-async function uploadFiles(productId: number, files: FileList) {
-  const uploads = Array.from(files).map(async (f) => {
-    const fd = new FormData();
-    fd.append('file', f);
-    await fetch(`/products/${productId}/media/upload`, { method: 'POST', body: fd });
-  });
-  await Promise.all(uploads);
-}
-
-function previewItems(urls: string, existingMedia?: any[], filePreviews?: string[]): PreviewItem[] {
-  const items: PreviewItem[] = [];
-  if (urls) {
-    const arr = urls.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    items.push(...arr.map(u => ({ url: u })));
-  }
-  if (existingMedia) {
-    items.push(...existingMedia.map(m => {
-      const t: 'video' | 'image' = m.mediaType === 'VIDEO' ? 'video' : 'image';
-      return { url: m.mediaUrl as string, type: t, title: m.description as string } as PreviewItem;
-    }));
-  }
-  if (filePreviews && filePreviews.length) {
-    items.push(...filePreviews.map(u => ({ url: u })));
-  }
-  return items;
 }
 
 function toCategoryPayloadArray(entries: { cuisineName: string | null; categories: string[]; subCategories: string[]; regionCategory: string | null }[]) {

@@ -1,0 +1,14 @@
+{
+  "product": {
+    "id": 2,
+    "name": "Lamb Gyro Wrapc",
+    "price": 15,
+    "sku": "AG-010",
+    "vendorId": 2,
+    "available": true,
+    "description": "DDD"
+  },
+  "mediaUrl": "https://example.com/test.jpg",
+  "mediaType": "IMAGE",
+  "storageProvider": "LOCAL"
+}

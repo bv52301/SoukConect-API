@@ -43,13 +43,14 @@ export default function VendorsList() {
                     <TableCell>{v.vendorId}</TableCell>
                     <TableCell>{v.image ? <img src={v.image} alt="" style={{ maxHeight: 32, maxWidth: 48 }} onError={(ev)=>{(ev.currentTarget as HTMLImageElement).style.display='none';}} /> : '-'}</TableCell>
                     <TableCell>{v.name}</TableCell>
-                    <TableCell>{v.email}</TableCell>
-                    <TableCell>{v.phoneNumber}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" component={Link} to={`/vendors/${v.vendorId}`}>Edit</Button>
-                      <Button size="small" color="error" onClick={() => v.vendorId && del.mutate(v.vendorId)} disabled={del.isPending}>Delete</Button>
-                    </TableCell>
-                  </TableRow>
+                  <TableCell>{v.email}</TableCell>
+                  <TableCell>{v.phoneNumber}</TableCell>
+                  <TableCell align="right">
+                    <Button size="small" component={Link} to={`/vendors/${v.vendorId}/view`}>View</Button>
+                    <Button size="small" component={Link} to={`/vendors/${v.vendorId}`}>Edit</Button>
+                    <Button size="small" color="error" onClick={() => v.vendorId && del.mutate(v.vendorId)} disabled={del.isPending}>Delete</Button>
+                  </TableCell>
+                </TableRow>
                 ))}
               </TableBody>
             </Table>
