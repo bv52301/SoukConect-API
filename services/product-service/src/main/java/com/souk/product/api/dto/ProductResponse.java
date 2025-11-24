@@ -20,9 +20,14 @@ public record ProductResponse(
         List<String> categories,
         Object categoryDetails,
         Object schedule,
+        Boolean useVendorSchedule,
         List<MediaResponse> media
 ) {
     public static ProductResponse from(Product product) {
+        return from(product, null);
+    }
+
+    public static ProductResponse from(Product product, JsonNode vendorSchedule) {
         List<MediaResponse> mediaResponses = null;
 
         if (product.getMedia() != null && !product.getMedia().isEmpty()) {
@@ -30,6 +35,11 @@ public record ProductResponse(
                     .map(MediaResponse::from)
                     .toList();
         }
+
+        // If product uses vendor schedule and vendor schedule is provided, use it; otherwise use product's own schedule
+        JsonNode effectiveSchedule = (product.getUseVendorSchedule() != null && product.getUseVendorSchedule() && vendorSchedule != null)
+                ? vendorSchedule
+                : product.getSchedule();
 
         return new ProductResponse(
                 product.getId(),
@@ -41,7 +51,8 @@ public record ProductResponse(
                 product.getDescription(),
                 extractCategories(product.getCategoryDetails()),
                 product.getCategoryDetails(),
-                product.getSchedule(),
+                effectiveSchedule,
+                product.getUseVendorSchedule(),
                 mediaResponses
         );
     }

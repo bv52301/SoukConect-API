@@ -80,6 +80,7 @@ public class VendorController {
                     existing.setName(req.name());
                     existing.setDescription(req.description());
                     existing.setSupportedCategories(req.supportedCategories());
+                    existing.setSchedule(req.schedule());
                     existing.setImage(req.image());
                     existing.setAddress1(req.address1());
                     existing.setAddress2(req.address2());

@@ -24,6 +24,7 @@ export type Vendor = {
   name: string;
   description?: string;
   supportedCategories?: unknown;
+  schedule?: unknown;
   image?: string;
   address1?: string;
   address2?: string;
@@ -33,6 +34,8 @@ export type Vendor = {
   contactName?: string;
   phoneNumber?: string;
   email?: string;
+  createdAt?: string;
+  scheduleUpdated?: string;
 };
 
 export type Product = {
@@ -46,6 +49,7 @@ export type Product = {
   categories?: unknown[];
   categoryDetails?: unknown;
   schedule?: unknown;
+  useVendorSchedule?: boolean;
   media?: Array<{ id?: number; url: string; mediaType?: string; description?: string }>; // optional from API
 };
 

@@ -1,9 +1,11 @@
 package com.souk.product.api;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Product;
 import com.souk.common.domain.ProductMedia;
 import com.souk.common.domain.ProductMedia.ValidationStatus;
 import com.souk.common.domain.ProductMedia.StorageProvider;
+import com.souk.common.domain.Vendor;
 import com.souk.common.port.DataAccessPort;
 import com.souk.product.api.dto.ProductCreateRequest;
 import com.souk.product.api.dto.ProductResponse;
@@ -20,7 +22,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/products")
@@ -29,13 +34,16 @@ public class ProductController {
     private final DataAccessPort<Product, Long> productPort;
     private final ProductQueryPort productQueryPort;
     private final DataAccessPort<ProductMedia, Long> mediaPort;
+    private final DataAccessPort<Vendor, Long> vendorPort;
 
     public ProductController(DataAccessPort<Product, Long> productPort,
                              ProductQueryPort productQueryPort,
-                             DataAccessPort<ProductMedia, Long> mediaPort) {
+                             DataAccessPort<ProductMedia, Long> mediaPort,
+                             DataAccessPort<Vendor, Long> vendorPort) {
         this.productPort = productPort;
         this.productQueryPort = productQueryPort;
         this.mediaPort = mediaPort;
+        this.vendorPort = vendorPort;
     }
 
     // ------------------------------------------------------------
@@ -45,9 +53,10 @@ public class ProductController {
     /** Get all products */
     @GetMapping
     public List<ProductResponse> listAll() {
-        return productPort.findAll()
-                .stream()
-                .map(ProductResponse::from)
+        List<Product> products = productPort.findAll();
+        Map<Long, Vendor> vendorMap = buildVendorMap(products);
+        return products.stream()
+                .map(p -> toResponse(p, vendorMap))
                 .toList();
     }
 
@@ -55,8 +64,10 @@ public class ProductController {
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getById(@PathVariable @Min(1) Long id) {
         return productPort.findById(id)
-                .map(ProductResponse::from)
-                .map(ResponseEntity::ok)
+                .map(p -> {
+                    Map<Long, Vendor> vendorMap = buildVendorMap(List.of(p));
+                    return ResponseEntity.ok(toResponse(p, vendorMap));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -64,17 +75,20 @@ public class ProductController {
     @GetMapping("/sku/{sku}")
     public ResponseEntity<ProductResponse> getBySku(@PathVariable String sku) {
         return productQueryPort.findBySku(sku)
-                .map(ProductResponse::from)
-                .map(ResponseEntity::ok)
+                .map(p -> {
+                    Map<Long, Vendor> vendorMap = buildVendorMap(List.of(p));
+                    return ResponseEntity.ok(toResponse(p, vendorMap));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     /** Get products by vendor id */
     @GetMapping("/vendor/{vendorId}")
     public List<ProductResponse> getByVendor(@PathVariable @Min(1) Long vendorId) {
-        return productQueryPort.findByVendorId(vendorId)
-                .stream()
-                .map(ProductResponse::from)
+        List<Product> products = productQueryPort.findByVendorId(vendorId);
+        Map<Long, Vendor> vendorMap = buildVendorMap(products);
+        return products.stream()
+                .map(p -> toResponse(p, vendorMap))
                 .toList();
     }
 
@@ -83,9 +97,10 @@ public class ProductController {
     public ResponseEntity<ProductResponse> create(@RequestBody @Valid ProductCreateRequest req) {
         Product toSave = req.toDomain();
         Product saved = productPort.save(toSave);
+        Map<Long, Vendor> vendorMap = buildVendorMap(List.of(saved));
         return ResponseEntity
                 .created(URI.create("/products/" + saved.getId()))
-                .body(ProductResponse.from(saved));
+                .body(toResponse(saved, vendorMap));
     }
 
     /** Update an existing product */
@@ -96,9 +111,10 @@ public class ProductController {
                 .map(existing -> {
                     Product updated = req.applyTo(existing);
                     Product saved = productPort.save(updated);
-                    return ResponseEntity.ok(ProductResponse.from(saved));
+                    Map<Long, Vendor> vendorMap = buildVendorMap(List.of(saved));
+                    return ResponseEntity.ok(toResponse(saved, vendorMap));
                 })
-                .orElse(ResponseEntity.<ProductMedia>notFound().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /** Delete a product */
@@ -110,6 +126,36 @@ public class ProductController {
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ------------------------------------------------------------
+    // 🔹 HELPER METHODS FOR VENDOR SCHEDULE MERGING
+    // ------------------------------------------------------------
+
+    /**
+     * Build a map of vendor IDs to Vendor objects for all unique vendor IDs in the product list.
+     * This allows efficient lookup when merging schedules.
+     */
+    private Map<Long, Vendor> buildVendorMap(List<Product> products) {
+        List<Long> vendorIds = products.stream()
+                .map(Product::getVendorId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        return vendorIds.stream()
+                .map(vendorPort::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toMap(Vendor::getVendorId, Function.identity()));
+    }
+
+    /**
+     * Convert a Product to ProductResponse, merging vendor schedule if needed.
+     */
+    private ProductResponse toResponse(Product product, Map<Long, Vendor> vendorMap) {
+        Vendor vendor = vendorMap.get(product.getVendorId());
+        return ProductResponse.from(product, vendor != null ? vendor.getSchedule() : null);
     }
 
     // ------------------------------------------------------------

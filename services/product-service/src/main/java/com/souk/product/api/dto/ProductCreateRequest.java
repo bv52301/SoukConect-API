@@ -19,6 +19,7 @@ public record ProductCreateRequest(
         String description,
         JsonNode categoryDetails,   // expected: array of objects; single object will be wrapped
         JsonNode schedule,
+        Boolean useVendorSchedule,
         List<MediaRequest> media
 ) {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -33,6 +34,7 @@ public record ProductCreateRequest(
         p.setDescription(description);
         p.setCategoryDetails(normalizeCategoryPayload(categoryDetails));
         p.setSchedule(schedule);
+        p.setUseVendorSchedule(useVendorSchedule != null ? useVendorSchedule : Boolean.FALSE);
 
         // Attach media items if present
         if (media != null && !media.isEmpty()) {

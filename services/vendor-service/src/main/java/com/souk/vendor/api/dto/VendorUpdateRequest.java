@@ -6,6 +6,7 @@ public record VendorUpdateRequest(
         String name,
         String description,
         JsonNode supportedCategories,
+        JsonNode schedule,
         String image,
         String address1,
         String address2,

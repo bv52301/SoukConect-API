@@ -19,7 +19,8 @@ public record ProductUpdateRequest(
         Boolean available,
         String description,
         JsonNode categoryDetails,   // expected: array of objects; single object will be wrapped
-        JsonNode schedule
+        JsonNode schedule,
+        Boolean useVendorSchedule
 ) {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -34,6 +35,7 @@ public record ProductUpdateRequest(
             existing.setCategoryDetails(normalizeCategoryPayload(categoryDetails));
         }
         if (schedule != null) existing.setSchedule(schedule);
+        if (useVendorSchedule != null) existing.setUseVendorSchedule(useVendorSchedule);
         return existing;
     }
 

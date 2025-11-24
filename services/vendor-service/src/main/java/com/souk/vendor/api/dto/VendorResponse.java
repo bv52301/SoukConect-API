@@ -10,6 +10,7 @@ public record VendorResponse(
         String name,
         String description,
         JsonNode supportedCategories,
+        JsonNode schedule,
         String image,
         String address1,
         String address2,
@@ -19,7 +20,8 @@ public record VendorResponse(
         String contactName,
         String phoneNumber,
         String email,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime scheduleUpdated
 ) {
     public static VendorResponse from(Vendor v) {
         return new VendorResponse(
@@ -27,6 +29,7 @@ public record VendorResponse(
                 v.getName(),
                 v.getDescription(),
                 v.getSupportedCategories(),
+                v.getSchedule(),
                 v.getImage(),
                 v.getAddress1(),
                 v.getAddress2(),
@@ -36,7 +39,8 @@ public record VendorResponse(
                 v.getContactName(),
                 v.getPhoneNumber(),
                 v.getEmail(),
-                v.getCreatedAt()
+                v.getCreatedAt(),
+                v.getScheduleUpdated()
         );
     }
 }

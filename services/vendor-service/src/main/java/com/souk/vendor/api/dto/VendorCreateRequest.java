@@ -7,6 +7,7 @@ public record VendorCreateRequest(
         String name,
         String description,
         JsonNode supportedCategories,
+        JsonNode schedule,
         String image,
         String address1,
         String address2,
@@ -22,6 +23,7 @@ public record VendorCreateRequest(
         v.setName(name);
         v.setDescription(description);
         v.setSupportedCategories(supportedCategories);
+        v.setSchedule(schedule);
         v.setImage(image);
         v.setAddress1(address1);
         v.setAddress2(address2);

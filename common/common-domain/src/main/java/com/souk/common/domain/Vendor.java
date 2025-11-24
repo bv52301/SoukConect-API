@@ -28,6 +28,10 @@ public class Vendor {
     @Column(name = "supportedCategories", columnDefinition = "json")
     private JsonNode supportedCategories;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "schedule", columnDefinition = "json")
+    private JsonNode schedule;
+
     @Column(length = 300)
     private String image;
 
@@ -58,6 +62,9 @@ public class Vendor {
     @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "schedule_updated", insertable = false, updatable = false)
+    private LocalDateTime scheduleUpdated;
+
     // === Getters & Setters ===
     public Long getVendorId() { return vendorId; }
     public void setVendorId(Long vendorId) { this.vendorId = vendorId; }
@@ -70,6 +77,9 @@ public class Vendor {
 
     public JsonNode getSupportedCategories() { return supportedCategories; }
     public void setSupportedCategories(JsonNode supportedCategories) { this.supportedCategories = supportedCategories; }
+
+    public JsonNode getSchedule() { return schedule; }
+    public void setSchedule(JsonNode schedule) { this.schedule = schedule; }
 
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
@@ -99,4 +109,6 @@ public class Vendor {
     public void setEmail(String email) { this.email = email; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+
+    public LocalDateTime getScheduleUpdated() { return scheduleUpdated; }
 }

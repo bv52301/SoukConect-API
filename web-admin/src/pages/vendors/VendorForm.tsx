@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, Stack, TextField, Typography, Button, CircularProgress, Autocomplete, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Card, CardContent, Stack, TextField, Typography, Button, CircularProgress, Autocomplete, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Divider, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import PreviewGallery from '../../components/previewgallery';
 import { fetchPreview } from '../../lib/apiClient';
@@ -20,6 +21,7 @@ const schema = z.object({
   pincode: z.string().optional().or(z.literal('')),
   contactName: z.string().optional().or(z.literal('')),
   image: z.string().url().optional().or(z.literal('')),
+  schedule: z.string().optional().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -48,6 +50,15 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [afterSaveDestination, setAfterSaveDestination] = useState<'home' | 'list'>('list');
 
+  // Schedule state
+  type WeeklyItem = { day_of_week: string[]; start: string; end: string; tz: string };
+  type DateItem = { date: string; start: string; end: string; tz: string };
+  const [weekly, setWeekly] = useState<WeeklyItem[]>([]);
+  const [datesArr, setDatesArr] = useState<DateItem[]>([]);
+  const [blackoutArr, setBlackoutArr] = useState<string[]>([]);
+  const dowOptions = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const scheduleSyncInitialized = useRef(false);
+
   // Distinct categories from cuisines service
   const catsQuery = useQuery({
     queryKey: ['cuisine-categories'],
@@ -70,6 +81,7 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
         pincode: data.pincode || '',
         contactName: data.contactName || '',
         image: data.image || '',
+        schedule: data.schedule ? JSON.stringify(data.schedule, null, 2) : '',
       });
       // Hydrate supported categories from array or map
       const sc: any = data.supportedCategories;
@@ -86,10 +98,37 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
         setSupportedCats([]);
         setInitialSupportedCats([]);
       }
+      // Pre-populate schedules
+      try {
+        const schedData: any = data.schedule || undefined;
+        if (schedData) {
+          if (Array.isArray(schedData.weekly_schedules)) {
+            setWeekly(schedData.weekly_schedules.map((w:any) => ({
+              day_of_week: Array.isArray(w.day_of_week) ? w.day_of_week : [],
+              start: w.start || '', end: w.end || '', tz: w.tz || 'Asia/Singapore'
+            })));
+          }
+          if (Array.isArray(schedData.dates)) {
+            setDatesArr(schedData.dates.map((d:any) => ({ date: d.date || '', start: d.start || '', end: d.end || '', tz: d.tz || 'Asia/Singapore' })));
+          }
+          if (Array.isArray(schedData.blackout)) {
+            setBlackoutArr(schedData.blackout.filter((x:any)=>!!x));
+          }
+        }
+      } catch {}
+      scheduleSyncInitialized.current = false;
     } else {
       setInitialSupportedCats([]);
     }
   }, [data, reset]);
+
+  // Auto-update schedule JSON from UI rows
+  useEffect(() => {
+    const sc = buildSchedule(weekly, datesArr, blackoutArr);
+    if (sc) setValue('schedule', JSON.stringify(sc, null, 2), { shouldDirty: scheduleSyncInitialized.current, shouldValidate: false });
+    else setValue('schedule', '', { shouldDirty: scheduleSyncInitialized.current, shouldValidate: false });
+    scheduleSyncInitialized.current = true;
+  }, [weekly, datesArr, blackoutArr, setValue]);
 
   const mutate = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -105,6 +144,7 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
         contactName: blankToUndef(values.contactName),
         image: blankToUndef(values.image),
         supportedCategories: supportedCats.length ? supportedCats : undefined,
+        schedule: parseJsonSafe(values.schedule),
       };
       if (mode === 'create') {
         return api<Vendor>('/vendors', { method: 'POST', body: JSON.stringify(payload) });
@@ -217,6 +257,52 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
                 renderInput={(params) => <TextField {...params} label="Supported Categories" placeholder="Select categories" />}
                 disabled={mode === 'view'}
               />
+              <Divider />
+              <Typography variant="subtitle1">Schedules</Typography>
+              <Stack direction="row" spacing={1}>
+                <Button size="small" variant="outlined" onClick={() => setWeekly(w => [...w, { day_of_week: [], start: '', end: '', tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Weekly</Button>
+                <Button size="small" variant="outlined" onClick={() => setDatesArr(d => [...d, { date: '', start: '', end: '', tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Date</Button>
+                <Button size="small" variant="outlined" onClick={() => setBlackoutArr(b => [...b, ''])} disabled={mode === 'view'}>+ Blackout</Button>
+              </Stack>
+
+              {/* Weekly rows */}
+              {weekly.map((w, idx) => (
+                <Stack key={`w-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
+                  <Autocomplete<string, true, false, false>
+                    multiple
+                    sx={{ minWidth: 220, flex:1 }}
+                    options={dowOptions}
+                    value={w.day_of_week}
+                    onChange={(_, v) => setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, day_of_week: v } : it))}
+                    renderInput={(p)=> <TextField {...p} label="Days of week" />}
+                  />
+                  <TextField sx={{ width: 130 }} type="time" label="Start" value={w.start} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, start: e.target.value } : it))} />
+                  <TextField sx={{ width: 130 }} type="time" label="End" value={w.end} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
+                  <TextField sx={{ minWidth: 180 }} label="Timezone" value={w.tz} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
+                  <IconButton aria-label="remove" onClick={()=> setWeekly(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
+                </Stack>
+              ))}
+
+              {/* Date rows */}
+              {datesArr.map((d, idx) => (
+                <Stack key={`d-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
+                  <TextField sx={{ width: 170 }} type="date" label="Date" value={d.date} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, date: e.target.value } : it))} />
+                  <TextField sx={{ width: 130 }} type="time" label="Start" value={d.start} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, start: e.target.value } : it))} />
+                  <TextField sx={{ width: 130 }} type="time" label="End" value={d.end} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
+                  <TextField sx={{ minWidth: 180 }} label="Timezone" value={d.tz} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
+                  <IconButton aria-label="remove" onClick={()=> setDatesArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
+                </Stack>
+              ))}
+
+              {/* Blackout dates */}
+              {blackoutArr.map((b, idx) => (
+                <Stack key={`b-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
+                  <TextField sx={{ width: 170 }} type="date" label="Blackout date" value={b} onChange={e=> setBlackoutArr(arr => arr.map((it,i)=> i===idx ? e.target.value : it))} />
+                  <IconButton aria-label="remove" onClick={()=> setBlackoutArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
+                </Stack>
+              ))}
+              <TextField label="schedule (JSON)" {...register('schedule')} multiline minRows={4} InputLabelProps={shrinkIfFilled(values.schedule)} />
+              <Divider />
               {mode !== 'view' ? (
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                   <Button type="submit" variant="contained" disabled={mutate.isPending || deleteMutation.isPending} endIcon={mutate.isPending ? <CircularProgress size={16} /> : undefined}>
@@ -269,4 +355,29 @@ function parseJsonSafe(s?: string) {
 function blankToUndef<T extends string | undefined>(v: T) {
   if (!v) return undefined;
   return (v as unknown as string).trim() === '' ? undefined : v;
+}
+
+function buildSchedule(
+  weekly: { day_of_week: string[]; start: string; end: string; tz: string }[],
+  datesArr: { date: string; start: string; end: string; tz: string }[],
+  blackoutArr: string[]
+) {
+  const sc: any = {};
+  const w = weekly.filter(x => x.day_of_week.length && x.start && x.end).map(x => ({
+    day_of_week: x.day_of_week,
+    start: x.start,
+    end: x.end,
+    tz: x.tz || 'Asia/Singapore'
+  }));
+  if (w.length) sc.weekly_schedules = w;
+  const d = datesArr.filter(x => x.date && x.start && x.end).map(x => ({
+    date: x.date,
+    start: x.start,
+    end: x.end,
+    tz: x.tz || 'Asia/Singapore'
+  }));
+  if (d.length) sc.dates = d;
+  const b = blackoutArr.filter(Boolean);
+  if (b.length) sc.blackout = b;
+  return Object.keys(sc).length ? sc : undefined;
 }

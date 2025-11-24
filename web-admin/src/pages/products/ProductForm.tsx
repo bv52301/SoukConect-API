@@ -97,6 +97,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
   const [weekly, setWeekly] = useState<WeeklyItem[]>([]);
   const [datesArr, setDatesArr] = useState<DateItem[]>([]);
   const [blackoutArr, setBlackoutArr] = useState<string[]>([]);
+  const [useVendorSchedule, setUseVendorSchedule] = useState(false);
   const [noChangesOpen, setNoChangesOpen] = useState(false);
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [afterSaveDestination, setAfterSaveDestination] = useState<'home' | 'list'>('list');
@@ -137,6 +138,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
         setValue('categoryDetails', JSON.stringify(toCategoryPayloadArray(normalized), null, 2), { shouldDirty: false, shouldValidate: false });
       }
       // Pre-populate schedules
+      setUseVendorSchedule(data.useVendorSchedule ?? false);
       try {
         const sc: any = data.schedule || undefined;
         if (sc) {
@@ -207,6 +209,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
         available: values.available,
         categoryDetails: categoryPayload,
         schedule: parseJsonSafe(values.schedule),
+        useVendorSchedule: useVendorSchedule,
       };
       if (mode === 'create') {
         const created = await api<Product>('/products', { method: 'POST', body: JSON.stringify(payload) });
@@ -366,51 +369,92 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
               <TextField label="categoryDetails (JSON)" {...register('categoryDetails')} multiline minRows={3} placeholder='Optional: advanced JSON override' InputLabelProps={shrinkIfFilled(values.categoryDetails)} />
               <Divider />
               <Typography variant="subtitle1">Schedules</Typography>
-              <Stack direction="row" spacing={1}>
-                <Button size="small" variant="outlined" onClick={() => setWeekly(w => [...w, { day_of_week: [], start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Weekly</Button>
-                <Button size="small" variant="outlined" onClick={() => setDatesArr(d => [...d, { date: '', start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Date</Button>
-                <Button size="small" variant="outlined" onClick={() => setBlackoutArr(b => [...b, ''])} disabled={mode === 'view'}>+ Blackout</Button>
-              </Stack>
-
-              {/* Weekly rows */}
-              {weekly.map((w, idx) => (
-                <Stack key={`w-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
-                  <Autocomplete<string, true, false, false>
-                    multiple
-                    sx={{ minWidth: 220, flex:1 }}
-                    options={dowOptions}
-                    value={w.day_of_week}
-                    onChange={(_, v) => setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, day_of_week: v } : it))}
-                    renderInput={(p)=> <TextField {...p} label="Days of week" />}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={useVendorSchedule}
+                    onChange={(_, c) => setUseVendorSchedule(c)}
+                    disabled={mode === 'view'}
                   />
-                  <TextField sx={{ width: 130 }} type="time" label="Start" value={w.start} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, start: e.target.value } : it))} />
-                  <TextField sx={{ width: 130 }} type="time" label="End" value={w.end} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
-                  <TextField sx={{ width: 120 }} type="number" label="Stock" value={w.stock} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, stock: e.target.value } : it))} />
-                  <TextField sx={{ minWidth: 180 }} label="Timezone" value={w.tz} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
-                  <IconButton aria-label="remove" onClick={()=> setWeekly(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
-                </Stack>
-              ))}
+                }
+                label="Use Vendor Schedule"
+              />
+              {!useVendorSchedule && (
+                <>
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="primary"
+                      onClick={async () => {
+                        const vendor = vendorsQuery.data?.find(v => v.vendorId === Number(values.vendorId));
+                        if (vendor && vendor.schedule) {
+                          const schedData: any = vendor.schedule;
+                          if (Array.isArray(schedData.weekly_schedules)) {
+                            setWeekly(schedData.weekly_schedules.map((w:any) => ({
+                              day_of_week: Array.isArray(w.day_of_week) ? w.day_of_week : [],
+                              start: w.start || '', end: w.end || '', stock: w.stock ?? 0, tz: w.tz || 'Asia/Singapore'
+                            })));
+                          }
+                          if (Array.isArray(schedData.dates)) {
+                            setDatesArr(schedData.dates.map((d:any) => ({ date: d.date || '', start: d.start || '', end: d.end || '', stock: d.stock ?? 0, tz: d.tz || 'Asia/Singapore' })));
+                          }
+                          if (Array.isArray(schedData.blackout)) {
+                            setBlackoutArr(schedData.blackout.filter((x:any)=>!!x));
+                          }
+                          setValue('schedule', JSON.stringify(schedData, null, 2), { shouldDirty: true });
+                        }
+                      }}
+                      disabled={mode === 'view' || !values.vendorId}
+                    >
+                      Clone from Vendor
+                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => setWeekly(w => [...w, { day_of_week: [], start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Weekly</Button>
+                    <Button size="small" variant="outlined" onClick={() => setDatesArr(d => [...d, { date: '', start: '', end: '', stock: 0, tz: 'Asia/Singapore' }])} disabled={mode === 'view'}>+ Date</Button>
+                    <Button size="small" variant="outlined" onClick={() => setBlackoutArr(b => [...b, ''])} disabled={mode === 'view'}>+ Blackout</Button>
+                  </Stack>
 
-              {/* Date rows */}
-              {datesArr.map((d, idx) => (
-                <Stack key={`d-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
-                  <TextField sx={{ width: 170 }} type="date" label="Date" value={d.date} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, date: e.target.value } : it))} />
-                  <TextField sx={{ width: 130 }} type="time" label="Start" value={d.start} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, start: e.target.value } : it))} />
-                  <TextField sx={{ width: 130 }} type="time" label="End" value={d.end} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
-                  <TextField sx={{ width: 120 }} type="number" label="Stock" value={d.stock} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, stock: e.target.value } : it))} />
-                  <TextField sx={{ minWidth: 180 }} label="Timezone" value={d.tz} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
-                  <IconButton aria-label="remove" onClick={()=> setDatesArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
-                </Stack>
-              ))}
+                  {/* Weekly rows */}
+                  {weekly.map((w, idx) => (
+                    <Stack key={`w-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
+                      <Autocomplete<string, true, false, false>
+                        multiple
+                        sx={{ minWidth: 220, flex:1 }}
+                        options={dowOptions}
+                        value={w.day_of_week}
+                        onChange={(_, v) => setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, day_of_week: v } : it))}
+                        renderInput={(p)=> <TextField {...p} label="Days of week" />}
+                      />
+                      <TextField sx={{ width: 130 }} type="time" label="Start" value={w.start} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, start: e.target.value } : it))} />
+                      <TextField sx={{ width: 130 }} type="time" label="End" value={w.end} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
+                      <TextField sx={{ width: 120 }} type="number" label="Stock" value={w.stock} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, stock: e.target.value } : it))} />
+                      <TextField sx={{ minWidth: 180 }} label="Timezone" value={w.tz} onChange={e=> setWeekly(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
+                      <IconButton aria-label="remove" onClick={()=> setWeekly(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
+                    </Stack>
+                  ))}
 
-              {/* Blackout dates */}
-              {blackoutArr.map((b, idx) => (
-                <Stack key={`b-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
-                  <TextField sx={{ width: 170 }} type="date" label="Blackout date" value={b} onChange={e=> setBlackoutArr(arr => arr.map((it,i)=> i===idx ? e.target.value : it))} />
-                  <IconButton aria-label="remove" onClick={()=> setBlackoutArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
-                </Stack>
-              ))}
-              <TextField label="schedule (JSON)" {...register('schedule')} multiline minRows={4} InputLabelProps={shrinkIfFilled(values.schedule)} />
+                  {/* Date rows */}
+                  {datesArr.map((d, idx) => (
+                    <Stack key={`d-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
+                      <TextField sx={{ width: 170 }} type="date" label="Date" value={d.date} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, date: e.target.value } : it))} />
+                      <TextField sx={{ width: 130 }} type="time" label="Start" value={d.start} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, start: e.target.value } : it))} />
+                      <TextField sx={{ width: 130 }} type="time" label="End" value={d.end} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, end: e.target.value } : it))} />
+                      <TextField sx={{ width: 120 }} type="number" label="Stock" value={d.stock} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, stock: e.target.value } : it))} />
+                      <TextField sx={{ minWidth: 180 }} label="Timezone" value={d.tz} onChange={e=> setDatesArr(arr => arr.map((it,i)=> i===idx ? { ...it, tz: e.target.value } : it))} />
+                      <IconButton aria-label="remove" onClick={()=> setDatesArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
+                    </Stack>
+                  ))}
+
+                  {/* Blackout dates */}
+                  {blackoutArr.map((b, idx) => (
+                    <Stack key={`b-${idx}`} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
+                      <TextField sx={{ width: 170 }} type="date" label="Blackout date" value={b} onChange={e=> setBlackoutArr(arr => arr.map((it,i)=> i===idx ? e.target.value : it))} />
+                      <IconButton aria-label="remove" onClick={()=> setBlackoutArr(arr => arr.filter((_,i)=> i!==idx))} disabled={mode === 'view'}><DeleteIcon /></IconButton>
+                    </Stack>
+                  ))}
+                  <TextField label="schedule (JSON)" {...register('schedule')} multiline minRows={4} InputLabelProps={shrinkIfFilled(values.schedule)} />
+                </>
+              )}
               <Divider />
               <Typography variant="subtitle1">Media</Typography>
               {mode !== 'view' && (

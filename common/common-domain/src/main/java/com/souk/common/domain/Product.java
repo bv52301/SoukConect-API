@@ -45,6 +45,9 @@ public class Product {
     @Column(name = "schedule", columnDefinition = "json")
     private JsonNode schedule;
 
+    @Column(name = "use_vendor_schedule", nullable = false)
+    private Boolean useVendorSchedule = false;
+
     @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
 
@@ -82,6 +85,9 @@ public class Product {
 
     public JsonNode getSchedule() { return schedule; }
     public void setSchedule(JsonNode schedule) { this.schedule = schedule; }
+
+    public Boolean getUseVendorSchedule() { return useVendorSchedule; }
+    public void setUseVendorSchedule(Boolean useVendorSchedule) { this.useVendorSchedule = useVendorSchedule; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getScheduleUpdated() { return scheduleUpdated; }
