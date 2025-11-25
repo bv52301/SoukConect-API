@@ -34,8 +34,35 @@ export type Vendor = {
   contactName?: string;
   phoneNumber?: string;
   email?: string;
+  latitude?: number;
+  longitude?: number;
   createdAt?: string;
   scheduleUpdated?: string;
+};
+
+export type VendorLocation = {
+  id?: number;
+  vendorId: number;
+  locationName: string;
+  latitude: number;
+  longitude: number;
+  address1?: string;
+  address2?: string;
+  state?: string;
+  pincode?: string;
+  landmark?: string;
+  schedule?: unknown;
+  status?: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type ProductLocationAssignment = {
+  vendorLocationId: number;
+  locationName?: string;
+  sku: string;
+  available?: boolean;
+  stock?: number;
 };
 
 export type Product = {
@@ -50,6 +77,7 @@ export type Product = {
   categoryDetails?: unknown;
   schedule?: unknown;
   useVendorSchedule?: boolean;
+  locations?: ProductLocationAssignment[];
   media?: Array<{ id?: number; url: string; mediaType?: string; description?: string }>; // optional from API
 };
 

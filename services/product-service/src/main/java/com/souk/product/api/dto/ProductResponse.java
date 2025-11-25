@@ -3,6 +3,7 @@ package com.souk.product.api.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Product;
+import com.souk.common.domain.ProductLocation;
 import com.souk.common.domain.ProductMedia;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public record ProductResponse(
         Object categoryDetails,
         Object schedule,
         Boolean useVendorSchedule,
+        List<LocationAssignmentResponse> locations,
         List<MediaResponse> media
 ) {
     public static ProductResponse from(Product product) {
@@ -33,6 +35,13 @@ public record ProductResponse(
         if (product.getMedia() != null && !product.getMedia().isEmpty()) {
             mediaResponses = product.getMedia().stream()
                     .map(MediaResponse::from)
+                    .toList();
+        }
+
+        List<LocationAssignmentResponse> locationResponses = null;
+        if (product.getLocations() != null && !product.getLocations().isEmpty()) {
+            locationResponses = product.getLocations().stream()
+                    .map(LocationAssignmentResponse::from)
                     .toList();
         }
 
@@ -53,6 +62,7 @@ public record ProductResponse(
                 product.getCategoryDetails(),
                 effectiveSchedule,
                 product.getUseVendorSchedule(),
+                locationResponses,
                 mediaResponses
         );
     }
@@ -110,6 +120,24 @@ public record ProductResponse(
                     media.getStorageProvider() != null ? media.getStorageProvider().name() : null,
                     media.getValidationStatus() != null ? media.getValidationStatus().name() : null,
                     media.getValidationError()
+            );
+        }
+    }
+
+    public record LocationAssignmentResponse(
+            Long vendorLocationId,
+            String locationName,
+            String sku,
+            Boolean available,
+            Integer stock
+    ) {
+        public static LocationAssignmentResponse from(ProductLocation location) {
+            return new LocationAssignmentResponse(
+                    location.getVendorLocation().getId(),
+                    location.getVendorLocation().getLocationName(),
+                    location.getSku(),
+                    location.getAvailable(),
+                    location.getStock()
             );
         }
     }

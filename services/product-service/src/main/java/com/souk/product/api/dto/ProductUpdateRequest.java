@@ -3,6 +3,8 @@ package com.souk.product.api.dto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Product;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.List;
 /**
  * Update request for products. All fields are optional; when present they overwrite the existing value.
  * Categories are normalized to an array shape for consistency with creation.
+ * Location assignments are managed separately via the ProductController.
  */
 public record ProductUpdateRequest(
         String name,
@@ -20,7 +23,8 @@ public record ProductUpdateRequest(
         String description,
         JsonNode categoryDetails,   // expected: array of objects; single object will be wrapped
         JsonNode schedule,
-        Boolean useVendorSchedule
+        Boolean useVendorSchedule,
+        List<LocationAssignment> locations
 ) {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -36,6 +40,7 @@ public record ProductUpdateRequest(
         }
         if (schedule != null) existing.setSchedule(schedule);
         if (useVendorSchedule != null) existing.setUseVendorSchedule(useVendorSchedule);
+        // Note: locations are handled separately in the controller
         return existing;
     }
 
@@ -44,4 +49,12 @@ public record ProductUpdateRequest(
         if (input.isArray()) return input;
         return MAPPER.createArrayNode().add(input);
     }
+
+    // Nested record for location assignments
+    public record LocationAssignment(
+            @NotNull Long vendorLocationId,
+            @NotBlank String sku,
+            Boolean available,
+            Integer stock
+    ) {}
 }

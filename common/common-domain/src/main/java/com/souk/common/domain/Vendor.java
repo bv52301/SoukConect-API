@@ -65,6 +65,12 @@ public class Vendor {
     @Column(name = "schedule_updated", insertable = false, updatable = false)
     private LocalDateTime scheduleUpdated;
 
+    @Column(nullable = false, precision = 10, scale = 8)
+    private BigDecimal latitude = BigDecimal.ZERO;
+
+    @Column(nullable = false, precision = 11, scale = 8)
+    private BigDecimal longitude = BigDecimal.ZERO;
+
     // === Getters & Setters ===
     public Long getVendorId() { return vendorId; }
     public void setVendorId(Long vendorId) { this.vendorId = vendorId; }
@@ -111,4 +117,10 @@ public class Vendor {
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public LocalDateTime getScheduleUpdated() { return scheduleUpdated; }
+
+    public BigDecimal getLatitude() { return latitude; }
+    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
+
+    public BigDecimal getLongitude() { return longitude; }
+    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
 }

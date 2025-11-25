@@ -3,6 +3,8 @@ package com.souk.vendor.api.dto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Vendor;
 
+import java.math.BigDecimal;
+
 public record VendorCreateRequest(
         String name,
         String description,
@@ -16,7 +18,9 @@ public record VendorCreateRequest(
         String pincode,
         String contactName,
         String phoneNumber,
-        String email
+        String email,
+        BigDecimal latitude,
+        BigDecimal longitude
 ) {
     public Vendor toDomain() {
         Vendor v = new Vendor();
@@ -33,6 +37,8 @@ public record VendorCreateRequest(
         v.setContactName(contactName);
         v.setPhoneNumber(phoneNumber);
         v.setEmail(email);
+        v.setLatitude(latitude != null ? latitude : BigDecimal.ZERO);
+        v.setLongitude(longitude != null ? longitude : BigDecimal.ZERO);
         return v;
     }
 }

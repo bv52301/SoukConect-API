@@ -3,6 +3,7 @@ package com.souk.product.api.dto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Product;
+import com.souk.common.domain.ProductLocation;
 import com.souk.common.domain.ProductMedia;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,7 @@ public record ProductCreateRequest(
         JsonNode categoryDetails,   // expected: array of objects; single object will be wrapped
         JsonNode schedule,
         Boolean useVendorSchedule,
+        List<LocationAssignment> locations,
         List<MediaRequest> media
 ) {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -103,4 +105,12 @@ public record ProductCreateRequest(
             return media;
         }
     }
+
+    // Nested record for location assignments
+    public record LocationAssignment(
+            @NotNull Long vendorLocationId,
+            @NotBlank String sku,
+            Boolean available,
+            Integer stock
+    ) {}
 }

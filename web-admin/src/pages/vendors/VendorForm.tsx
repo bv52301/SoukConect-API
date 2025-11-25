@@ -7,7 +7,7 @@ import PreviewGallery from '../../components/previewgallery';
 import { fetchPreview } from '../../lib/apiClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { api, Vendor } from '../../lib/apiClient';
+import { api, Vendor, VendorLocation } from '../../lib/apiClient';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -21,6 +21,8 @@ const schema = z.object({
   pincode: z.string().optional().or(z.literal('')),
   contactName: z.string().optional().or(z.literal('')),
   image: z.string().url().optional().or(z.literal('')),
+  latitude: z.string().optional().or(z.literal('')),
+  longitude: z.string().optional().or(z.literal('')),
   schedule: z.string().optional().or(z.literal('')),
 });
 
@@ -35,6 +37,13 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
   const { data } = useQuery({
     queryKey: ['vendor', id],
     queryFn: () => api<Vendor>(`/vendors/${id}`),
+    enabled: mode !== 'create' && !!id,
+  });
+
+  // Vendor locations query
+  const locationsQuery = useQuery({
+    queryKey: ['vendor-locations', id],
+    queryFn: () => api<VendorLocation[]>(`/vendors/${id}/locations`),
     enabled: mode !== 'create' && !!id,
   });
 
@@ -59,6 +68,22 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
   const dowOptions = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const scheduleSyncInitialized = useRef(false);
 
+  // Additional locations state
+  type LocationEntry = {
+    id?: number;
+    locationName: string;
+    latitude: string;
+    longitude: string;
+    address1: string;
+    address2: string;
+    state: string;
+    pincode: string;
+    landmark: string;
+    status: 'ACTIVE' | 'INACTIVE';
+  };
+  const [locationEntries, setLocationEntries] = useState<LocationEntry[]>([]);
+  const [deletedLocationIds, setDeletedLocationIds] = useState<number[]>([]);
+
   // Distinct categories from cuisines service
   const catsQuery = useQuery({
     queryKey: ['cuisine-categories'],
@@ -81,6 +106,8 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
         pincode: data.pincode || '',
         contactName: data.contactName || '',
         image: data.image || '',
+        latitude: data.latitude ? String(data.latitude) : '',
+        longitude: data.longitude ? String(data.longitude) : '',
         schedule: data.schedule ? JSON.stringify(data.schedule, null, 2) : '',
       });
       // Hydrate supported categories from array or map
@@ -122,6 +149,24 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
     }
   }, [data, reset]);
 
+  // Populate location entries from query
+  useEffect(() => {
+    if (locationsQuery.data) {
+      setLocationEntries(locationsQuery.data.map(loc => ({
+        id: loc.id,
+        locationName: loc.locationName,
+        latitude: loc.latitude ? String(loc.latitude) : '',
+        longitude: loc.longitude ? String(loc.longitude) : '',
+        address1: loc.address1 || '',
+        address2: loc.address2 || '',
+        state: loc.state || '',
+        pincode: loc.pincode || '',
+        landmark: loc.landmark || '',
+        status: loc.status || 'ACTIVE'
+      })));
+    }
+  }, [locationsQuery.data]);
+
   // Auto-update schedule JSON from UI rows
   useEffect(() => {
     const sc = buildSchedule(weekly, datesArr, blackoutArr);
@@ -143,6 +188,8 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
         pincode: blankToUndef(values.pincode),
         contactName: blankToUndef(values.contactName),
         image: blankToUndef(values.image),
+        latitude: values.latitude ? parseFloat(values.latitude) : undefined,
+        longitude: values.longitude ? parseFloat(values.longitude) : undefined,
         supportedCategories: supportedCats.length ? supportedCats : undefined,
         schedule: parseJsonSafe(values.schedule),
       };
@@ -152,8 +199,47 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
         return api<Vendor>(`/vendors/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
       }
     },
-    onSuccess: () => {
+    onSuccess: async (savedVendor) => {
+      // Save/update/delete locations for edit mode
+      if (mode === 'edit' && id) {
+        // Delete removed locations
+        for (const locId of deletedLocationIds) {
+          await api(`/vendors/${id}/locations/${locId}`, { method: 'DELETE' });
+        }
+
+        // Create or update locations
+        for (const loc of locationEntries) {
+          const locationPayload = {
+            locationName: loc.locationName,
+            latitude: loc.latitude ? parseFloat(loc.latitude) : 0,
+            longitude: loc.longitude ? parseFloat(loc.longitude) : 0,
+            address1: blankToUndef(loc.address1),
+            address2: blankToUndef(loc.address2),
+            state: blankToUndef(loc.state),
+            pincode: blankToUndef(loc.pincode),
+            landmark: blankToUndef(loc.landmark),
+            status: loc.status
+          };
+
+          if (loc.id) {
+            // Update existing
+            await api(`/vendors/${id}/locations/${loc.id}`, {
+              method: 'PUT',
+              body: JSON.stringify(locationPayload)
+            });
+          } else if (loc.locationName.trim()) {
+            // Create new (only if name is provided)
+            await api(`/vendors/${id}/locations`, {
+              method: 'POST',
+              body: JSON.stringify(locationPayload)
+            });
+          }
+        }
+        qc.invalidateQueries({ queryKey: ['vendor-locations', id] });
+      }
+
       qc.invalidateQueries({ queryKey: ['vendors'] });
+      qc.invalidateQueries({ queryKey: ['vendor-locations'] }); // Invalidate global locations query
       navigate(listPath);
       setAfterSaveDestination('list');
     },
@@ -208,6 +294,28 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
               <TextField label="State" {...register('state')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.state)} />
               <TextField label="Pincode" {...register('pincode')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.pincode)} />
               <TextField label="Contact Name" {...register('contactName')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.contactName)} />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  label="Latitude"
+                  {...register('latitude')}
+                  disabled={mode === 'view'}
+                  type="number"
+                  inputProps={{ step: 'any' }}
+                  placeholder="e.g., 1.290270"
+                  InputLabelProps={shrinkIfFilled(values.latitude)}
+                  fullWidth
+                />
+                <TextField
+                  label="Longitude"
+                  {...register('longitude')}
+                  disabled={mode === 'view'}
+                  type="number"
+                  inputProps={{ step: 'any' }}
+                  placeholder="e.g., 103.851959"
+                  InputLabelProps={shrinkIfFilled(values.longitude)}
+                  fullWidth
+                />
+              </Stack>
               <TextField label="Image URL" {...register('image')} disabled={mode === 'view'} InputLabelProps={shrinkIfFilled(values.image)} />
               {imageValue ? (
                 <Card variant="outlined">
@@ -302,6 +410,123 @@ export default function VendorForm({ mode }: { mode: 'create' | 'edit' | 'view' 
                 </Stack>
               ))}
               <TextField label="schedule (JSON)" {...register('schedule')} multiline minRows={4} InputLabelProps={shrinkIfFilled(values.schedule)} />
+
+              {mode === 'edit' && (
+                <>
+                  <Divider />
+                  <Typography variant="subtitle1">Additional Locations (Branches)</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Manage multiple physical locations for this vendor. The primary location is set above.
+                  </Typography>
+                  <Stack spacing={2}>
+                    {locationEntries.map((loc, idx) => (
+                      <Card key={`loc-${idx}`} variant="outlined">
+                        <CardContent>
+                          <Stack spacing={2}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="subtitle2">
+                                Location {idx + 1} {loc.id ? `(ID: ${loc.id})` : '(New)'}
+                              </Typography>
+                              <IconButton
+                                aria-label="remove"
+                                color="error"
+                                onClick={() => {
+                                  if (loc.id) {
+                                    setDeletedLocationIds(prev => [...prev, loc.id!]);
+                                  }
+                                  setLocationEntries(arr => arr.filter((_, i) => i !== idx));
+                                }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </Stack>
+                            <TextField
+                              label="Location Name"
+                              value={loc.locationName}
+                              onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, locationName: e.target.value } : it))}
+                              placeholder="e.g., Downtown Branch"
+                              required
+                            />
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                              <TextField
+                                label="Latitude"
+                                value={loc.latitude}
+                                onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, latitude: e.target.value } : it))}
+                                type="number"
+                                slotProps={{ htmlInput: { step: 'any' } }}
+                                placeholder="e.g., 1.290270"
+                                fullWidth
+                              />
+                              <TextField
+                                label="Longitude"
+                                value={loc.longitude}
+                                onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, longitude: e.target.value } : it))}
+                                type="number"
+                                slotProps={{ htmlInput: { step: 'any' } }}
+                                placeholder="e.g., 103.851959"
+                                fullWidth
+                              />
+                            </Stack>
+                            <TextField
+                              label="Address 1"
+                              value={loc.address1}
+                              onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, address1: e.target.value } : it))}
+                            />
+                            <TextField
+                              label="Address 2"
+                              value={loc.address2}
+                              onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, address2: e.target.value } : it))}
+                            />
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                              <TextField
+                                label="State"
+                                value={loc.state}
+                                onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, state: e.target.value } : it))}
+                                fullWidth
+                              />
+                              <TextField
+                                label="Pincode"
+                                value={loc.pincode}
+                                onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, pincode: e.target.value } : it))}
+                                fullWidth
+                              />
+                            </Stack>
+                            <TextField
+                              label="Landmark"
+                              value={loc.landmark}
+                              onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, landmark: e.target.value } : it))}
+                            />
+                            <Autocomplete
+                              options={['ACTIVE', 'INACTIVE'] as const}
+                              value={loc.status}
+                              onChange={(_, val) => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, status: val || 'ACTIVE' } : it))}
+                              renderInput={(params) => <TextField {...params} label="Status" />}
+                            />
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setLocationEntries(arr => [...arr, {
+                        locationName: '',
+                        latitude: '',
+                        longitude: '',
+                        address1: '',
+                        address2: '',
+                        state: '',
+                        pincode: '',
+                        landmark: '',
+                        status: 'ACTIVE'
+                      }])}
+                    >
+                      + Add Location
+                    </Button>
+                  </Stack>
+                </>
+              )}
+
               <Divider />
               {mode !== 'view' ? (
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>

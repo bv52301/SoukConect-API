@@ -2,6 +2,8 @@ package com.souk.vendor.api.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.math.BigDecimal;
+
 public record VendorUpdateRequest(
         String name,
         String description,
@@ -15,5 +17,7 @@ public record VendorUpdateRequest(
         String pincode,
         String contactName,
         String phoneNumber,
-        String email
+        String email,
+        BigDecimal latitude,
+        BigDecimal longitude
 ) {}

@@ -3,6 +3,7 @@ package com.souk.vendor.api.dto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Vendor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record VendorResponse(
@@ -20,6 +21,8 @@ public record VendorResponse(
         String contactName,
         String phoneNumber,
         String email,
+        BigDecimal latitude,
+        BigDecimal longitude,
         LocalDateTime createdAt,
         LocalDateTime scheduleUpdated
 ) {
@@ -39,6 +42,8 @@ public record VendorResponse(
                 v.getContactName(),
                 v.getPhoneNumber(),
                 v.getEmail(),
+                v.getLatitude(),
+                v.getLongitude(),
                 v.getCreatedAt(),
                 v.getScheduleUpdated()
         );

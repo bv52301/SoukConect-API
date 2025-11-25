@@ -9,6 +9,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -58,6 +59,10 @@ public class Product {
     @JsonIgnoreProperties(value = { "product" }, allowSetters = true)
     private List<ProductMedia> media;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "product" }, allowSetters = true)
+    private List<ProductLocation> locations = new ArrayList<>();
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -94,4 +99,7 @@ public class Product {
 
     public List<ProductMedia> getMedia() { return media; }
     public void setMedia(List<ProductMedia> media) { this.media = media; }
+
+    public List<ProductLocation> getLocations() { return locations; }
+    public void setLocations(List<ProductLocation> locations) { this.locations = locations; }
 }

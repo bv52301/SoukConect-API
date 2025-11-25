@@ -2,6 +2,9 @@ package com.souk.product.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Product;
+import com.souk.common.domain.ProductLocation;
+import com.souk.common.domain.ProductLocationId;
+import com.souk.common.domain.VendorLocation;
 import com.souk.common.domain.ProductMedia;
 import com.souk.common.domain.ProductMedia.ValidationStatus;
 import com.souk.common.domain.ProductMedia.StorageProvider;
@@ -21,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,15 +39,18 @@ public class ProductController {
     private final ProductQueryPort productQueryPort;
     private final DataAccessPort<ProductMedia, Long> mediaPort;
     private final DataAccessPort<Vendor, Long> vendorPort;
+    private final DataAccessPort<VendorLocation, Long> vendorLocationPort;
 
     public ProductController(DataAccessPort<Product, Long> productPort,
                              ProductQueryPort productQueryPort,
                              DataAccessPort<ProductMedia, Long> mediaPort,
-                             DataAccessPort<Vendor, Long> vendorPort) {
+                             DataAccessPort<Vendor, Long> vendorPort,
+                             DataAccessPort<VendorLocation, Long> vendorLocationPort) {
         this.productPort = productPort;
         this.productQueryPort = productQueryPort;
         this.mediaPort = mediaPort;
         this.vendorPort = vendorPort;
+        this.vendorLocationPort = vendorLocationPort;
     }
 
     // ------------------------------------------------------------
@@ -97,6 +104,27 @@ public class ProductController {
     public ResponseEntity<ProductResponse> create(@RequestBody @Valid ProductCreateRequest req) {
         Product toSave = req.toDomain();
         Product saved = productPort.save(toSave);
+
+        // Handle location assignments
+        if (req.locations() != null && !req.locations().isEmpty()) {
+            List<ProductLocation> locationAssignments = new ArrayList<>();
+            for (var loc : req.locations()) {
+                VendorLocation vendorLocation = vendorLocationPort.findById(loc.vendorLocationId())
+                        .orElseThrow(() -> new RuntimeException("Vendor location not found: " + loc.vendorLocationId()));
+
+                ProductLocation assignment = new ProductLocation(
+                        saved,
+                        vendorLocation,
+                        loc.sku(),
+                        loc.available() != null ? loc.available() : true,
+                        loc.stock() != null ? loc.stock() : 0
+                );
+                locationAssignments.add(assignment);
+            }
+            saved.setLocations(locationAssignments);
+            saved = productPort.save(saved);
+        }
+
         Map<Long, Vendor> vendorMap = buildVendorMap(List.of(saved));
         return ResponseEntity
                 .created(URI.create("/products/" + saved.getId()))
@@ -110,6 +138,30 @@ public class ProductController {
         return productPort.findById(id)
                 .map(existing -> {
                     Product updated = req.applyTo(existing);
+
+                    // Handle location assignments update
+                    if (req.locations() != null) {
+                        // Clear existing locations
+                        updated.getLocations().clear();
+
+                        // Add new location assignments
+                        List<ProductLocation> locationAssignments = new ArrayList<>();
+                        for (var loc : req.locations()) {
+                            VendorLocation vendorLocation = vendorLocationPort.findById(loc.vendorLocationId())
+                                    .orElseThrow(() -> new RuntimeException("Vendor location not found: " + loc.vendorLocationId()));
+
+                            ProductLocation assignment = new ProductLocation(
+                                    updated,
+                                    vendorLocation,
+                                    loc.sku(),
+                                    loc.available() != null ? loc.available() : true,
+                                    loc.stock() != null ? loc.stock() : 0
+                            );
+                            locationAssignments.add(assignment);
+                        }
+                        updated.setLocations(locationAssignments);
+                    }
+
                     Product saved = productPort.save(updated);
                     Map<Long, Vendor> vendorMap = buildVendorMap(List.of(saved));
                     return ResponseEntity.ok(toResponse(saved, vendorMap));
@@ -126,6 +178,116 @@ public class ProductController {
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Bulk update products from Excel file */
+    @PostMapping(value = "/bulk-update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<com.souk.product.api.dto.BulkUpdateResult> bulkUpdate(
+            @RequestPart("file") MultipartFile file
+    ) {
+        try {
+            List<com.souk.product.util.ExcelParser.ProductRow> rows =
+                    com.souk.product.util.ExcelParser.parseExcel(file);
+
+            List<com.souk.product.api.dto.BulkUpdateResult.RowResult> results = new ArrayList<>();
+            int successCount = 0;
+            int failureCount = 0;
+
+            for (int i = 0; i < rows.size(); i++) {
+                com.souk.product.util.ExcelParser.ProductRow row = rows.get(i);
+                int rowNumber = i + 2; // Excel row (1-indexed + 1 for header)
+
+                try {
+                    // Find product by SKU
+                    Optional<Product> productOpt = productQueryPort.findBySku(row.sku);
+
+                    if (productOpt.isEmpty()) {
+                        results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
+                                rowNumber, row.sku, false, "Product not found with SKU: " + row.sku
+                        ));
+                        failureCount++;
+                        continue;
+                    }
+
+                    Product product = productOpt.get();
+
+                    // Update fields if provided
+                    if (row.name != null && !row.name.isEmpty()) {
+                        product.setName(row.name);
+                    }
+                    if (row.price != null) {
+                        product.setPrice(row.price);
+                    }
+                    if (row.description != null) {
+                        product.setDescription(row.description);
+                    }
+                    if (row.available != null) {
+                        product.setAvailable(row.available);
+                    }
+                    if (row.categoryDetails != null) {
+                        product.setCategoryDetails(row.categoryDetails);
+                    }
+                    if (row.schedule != null) {
+                        product.setSchedule(row.schedule);
+                    }
+                    if (row.useVendorSchedule != null) {
+                        product.setUseVendorSchedule(row.useVendorSchedule);
+                    }
+
+                    // Update media if provided
+                    if (row.mediaUrls != null && !row.mediaUrls.isEmpty()) {
+                        // Clear existing media
+                        if (product.getMedia() != null) {
+                            product.getMedia().clear();
+                        }
+
+                        // Add new media
+                        List<ProductMedia> newMedia = new ArrayList<>();
+                        for (String url : row.mediaUrls) {
+                            ProductMedia media = new ProductMedia();
+                            media.setProduct(product);
+                            media.setMediaUrl(url);
+                            media.setMediaType(ProductMedia.MediaType.IMAGE); // Default to IMAGE
+                            media.setStorageProvider(StorageProvider.LOCAL);
+                            media.setValidationStatus(ValidationStatus.PENDING);
+                            newMedia.add(media);
+                        }
+                        product.setMedia(newMedia);
+                    }
+
+                    // Save the updated product
+                    productPort.save(product);
+
+                    results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
+                            rowNumber, row.sku, true, "Updated successfully"
+                    ));
+                    successCount++;
+
+                } catch (Exception e) {
+                    results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
+                            rowNumber, row.sku, false, "Error: " + e.getMessage()
+                    ));
+                    failureCount++;
+                }
+            }
+
+            com.souk.product.api.dto.BulkUpdateResult result =
+                    new com.souk.product.api.dto.BulkUpdateResult(
+                            rows.size(), successCount, failureCount, results
+                    );
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    new com.souk.product.api.dto.BulkUpdateResult(
+                            0, 0, 0,
+                            List.of(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
+                                    0, "", false, "Failed to parse Excel file: " + e.getMessage()
+                            ))
+                    )
+            );
+        }
     }
 
     // ------------------------------------------------------------

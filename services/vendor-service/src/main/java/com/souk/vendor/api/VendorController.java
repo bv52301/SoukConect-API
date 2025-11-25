@@ -1,6 +1,7 @@
 package com.souk.vendor.api;
 
 import com.souk.common.domain.Vendor;
+import com.souk.common.domain.VendorLocation;
 import com.souk.common.port.DataAccessPort;
 import com.souk.common.adapters.jpa.repository.VendorRepository;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.souk.vendor.api.dto.VendorCreateRequest;
 import com.souk.vendor.api.dto.VendorUpdateRequest;
 import com.souk.vendor.api.dto.VendorResponse;
+import com.souk.vendor.api.dto.VendorLocationResponse;
 
 import java.net.URI;
 import java.util.List;
@@ -21,10 +23,14 @@ public class VendorController {
 
     private final DataAccessPort<Vendor, Long> vendorPort;
     private final VendorRepository vendorRepo;
+    private final DataAccessPort<VendorLocation, Long> vendorLocationPort;
 
-    public VendorController(DataAccessPort<Vendor, Long> vendorPort, VendorRepository vendorRepo) {
+    public VendorController(DataAccessPort<Vendor, Long> vendorPort,
+                           VendorRepository vendorRepo,
+                           DataAccessPort<VendorLocation, Long> vendorLocationPort) {
         this.vendorPort = vendorPort;
         this.vendorRepo = vendorRepo;
+        this.vendorLocationPort = vendorLocationPort;
     }
 
     // --- List all vendors ---
@@ -90,6 +96,8 @@ public class VendorController {
                     existing.setContactName(req.contactName());
                     existing.setPhoneNumber(req.phoneNumber());
                     existing.setEmail(req.email());
+                    if (req.latitude() != null) existing.setLatitude(req.latitude());
+                    if (req.longitude() != null) existing.setLongitude(req.longitude());
                     Vendor saved = vendorPort.save(existing);
                     return ResponseEntity.ok(VendorResponse.from(saved));
                 })
@@ -105,5 +113,13 @@ public class VendorController {
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().<Void>build());
+    }
+
+    // --- Get all vendor locations (for multi-select in product form) ---
+    @GetMapping("/locations")
+    public List<VendorLocationResponse> getAllVendorLocations() {
+        return vendorLocationPort.findAll().stream()
+                .map(VendorLocationResponse::from)
+                .toList();
     }
 }

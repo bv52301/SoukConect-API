@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { api, Product, Vendor, Cuisine } from '../../lib/apiClient';
+import { api, Product, Vendor, Cuisine, VendorLocation, ProductLocationAssignment } from '../../lib/apiClient';
 import { z } from 'zod';
 import PreviewGallery, { PreviewItem } from '../../components/previewgallery';
 import { fetchPreview } from '../../lib/apiClient';
@@ -48,6 +48,17 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
     placeholderData: (prev) => prev ?? [],
     staleTime: 10_000,
   });
+
+  // Vendor locations for selection
+  const vendorLocationsQuery = useQuery<VendorLocation[]>({
+    queryKey: ['vendor-locations'],
+    queryFn: () => api<VendorLocation[]>('/vendors/locations'),
+    staleTime: 30_000,
+  });
+
+  // Location assignments state
+  type LocationEntry = { vendorLocationId: number | null; sku: string; available: boolean; stock: number };
+  const [locationEntries, setLocationEntries] = useState<LocationEntry[]>([]);
 
   // Existing media list for edit mode
   const mediaQuery = useQuery({
@@ -137,6 +148,15 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
         setCategoryEntries(normalized);
         setValue('categoryDetails', JSON.stringify(toCategoryPayloadArray(normalized), null, 2), { shouldDirty: false, shouldValidate: false });
       }
+      // Pre-populate location assignments
+      if (data.locations && data.locations.length > 0) {
+        setLocationEntries(data.locations.map(loc => ({
+          vendorLocationId: loc.vendorLocationId,
+          sku: loc.sku,
+          available: loc.available ?? true,
+          stock: loc.stock ?? 0
+        })));
+      }
       // Pre-populate schedules
       setUseVendorSchedule(data.useVendorSchedule ?? false);
       try {
@@ -200,6 +220,16 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
         ));
       };
 
+      // Build location assignments payload
+      const locationsPayload = locationEntries
+        .filter(loc => loc.vendorLocationId !== null && loc.sku.trim())
+        .map(loc => ({
+          vendorLocationId: loc.vendorLocationId!,
+          sku: loc.sku,
+          available: loc.available,
+          stock: loc.stock
+        }));
+
       const payload: Product = {
         name: values.name,
         sku: values.sku,
@@ -210,6 +240,7 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
         categoryDetails: categoryPayload,
         schedule: parseJsonSafe(values.schedule),
         useVendorSchedule: useVendorSchedule,
+        locations: locationsPayload.length > 0 ? locationsPayload : undefined,
       };
       if (mode === 'create') {
         const created = await api<Product>('/products', { method: 'POST', body: JSON.stringify(payload) });
@@ -306,6 +337,73 @@ export default function ProductForm({ mode }: { mode: 'create' | 'edit' | 'view'
                 control={control}
               />
               <FormControlLabel control={<Switch checked={!!watch('available')} onChange={(_, c) => setValue('available', c)} disabled={mode === 'view'} />} label="Available" />
+
+              <Divider />
+              <Typography variant="subtitle1">Location Assignments</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Assign this product to specific vendor locations with location-specific SKU, availability, and stock.
+              </Typography>
+              <Stack spacing={2}>
+                {locationEntries.map((entry, idx) => (
+                  <Stack key={`loc-entry-${idx}`} spacing={2} border={1} borderColor="divider" borderRadius={1} padding={2}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                      <Autocomplete<VendorLocation>
+                        sx={{ flex: 1, minWidth: 220 }}
+                        options={vendorLocationsQuery.data ?? []}
+                        loading={vendorLocationsQuery.isLoading}
+                        getOptionLabel={(loc: VendorLocation) => `${loc.locationName} (${loc.vendorId})`}
+                        value={(vendorLocationsQuery.data ?? []).find(loc => loc.id === entry.vendorLocationId) || null}
+                        onChange={(_, val) => {
+                          setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, vendorLocationId: val?.id ?? null } : it));
+                        }}
+                        renderInput={(params) => <TextField {...params} label="Vendor Location" placeholder="Select location" />}
+                        disabled={mode === 'view'}
+                      />
+                      <TextField
+                        sx={{ minWidth: 180 }}
+                        label="Location SKU"
+                        value={entry.sku}
+                        onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, sku: e.target.value } : it))}
+                        placeholder="e.g., PIZZA-DTN-001"
+                        disabled={mode === 'view'}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={entry.available}
+                            onChange={(_, c) => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, available: c } : it))}
+                            disabled={mode === 'view'}
+                          />
+                        }
+                        label="Available"
+                      />
+                      <TextField
+                        sx={{ width: 120 }}
+                        type="number"
+                        label="Stock"
+                        value={entry.stock}
+                        onChange={e => setLocationEntries(arr => arr.map((it, i) => i === idx ? { ...it, stock: parseInt(e.target.value) || 0 } : it))}
+                        disabled={mode === 'view'}
+                      />
+                      <IconButton
+                        aria-label="remove"
+                        onClick={() => setLocationEntries(arr => arr.filter((_, i) => i !== idx))}
+                        disabled={mode === 'view'}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                ))}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setLocationEntries(arr => [...arr, { vendorLocationId: null, sku: '', available: true, stock: 0 }])}
+                  disabled={mode === 'view'}
+                >
+                  + Add Location
+                </Button>
+              </Stack>
               <Typography variant="subtitle1">Category Details</Typography>
               <Stack spacing={2}>
                 {categoryEntries.map((entry, idx) => (
