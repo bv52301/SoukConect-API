@@ -76,116 +76,23 @@ export default function ProductsList() {
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = ['SKU', 'Name', 'Price', 'Description', 'Available', 'CategoryDetails', 'Schedule', 'UseVendorSchedule', 'MediaUrls'];
+  const downloadTemplate = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/products/bulk-upload-template`);
+      if (!response.ok) {
+        throw new Error('Failed to download template');
+      }
 
-    // Sample category details JSON
-    const sampleCategoryDetails1 = JSON.stringify([{
-      cuisineName: "Italian",
-      Category: ["Pasta", "Pizza"],
-      subCategories: ["Spaghetti", "Margherita"],
-      regionCategory: "European"
-    }]);
-
-    const sampleCategoryDetails2 = JSON.stringify([{
-      cuisineName: "Chinese",
-      Category: ["Noodles", "Rice"],
-      subCategories: ["Fried Rice", "Chow Mein"],
-      regionCategory: "Asian"
-    }]);
-
-    // Sample schedule JSON with weekly schedules, dates, and blackout
-    const sampleSchedule1 = JSON.stringify({
-      weekly_schedules: [
-        {
-          day_of_week: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-          start: "09:00",
-          end: "17:00",
-          stock: 100,
-          tz: "Asia/Singapore"
-        }
-      ],
-      dates: [
-        {
-          date: "2025-12-25",
-          start: "10:00",
-          end: "15:00",
-          stock: 50,
-          tz: "Asia/Singapore"
-        }
-      ],
-      blackout: ["2025-01-01", "2025-12-31"]
-    });
-
-    const sampleSchedule2 = JSON.stringify({
-      weekly_schedules: [
-        {
-          day_of_week: ["Sat", "Sun"],
-          start: "10:00",
-          end: "22:00",
-          stock: 150,
-          tz: "Asia/Singapore"
-        }
-      ]
-    });
-
-    // Create sample rows
-    const sampleRows = [
-      [
-        'PROD-001',
-        'Sample Product 1',
-        '29.99',
-        'This is a sample product with full schedule',
-        'true',
-        sampleCategoryDetails1,
-        sampleSchedule1,
-        'false',
-        'https://example.com/image1.jpg|https://example.com/image2.jpg'
-      ],
-      [
-        'PROD-002',
-        'Sample Product 2',
-        '45.50',
-        'This product uses vendor schedule',
-        'true',
-        sampleCategoryDetails2,
-        '',
-        'true',
-        'https://example.com/product2.jpg'
-      ],
-      [
-        'PROD-003',
-        'Sample Product 3',
-        '15.00',
-        'Weekend availability only',
-        'true',
-        sampleCategoryDetails1,
-        sampleSchedule2,
-        'false',
-        'https://example.com/image3a.jpg|https://example.com/image3b.jpg|https://example.com/image3c.jpg'
-      ]
-    ];
-
-    // Build CSV content
-    let csvContent = headers.join(',') + '\n';
-    sampleRows.forEach(row => {
-      // Escape fields that contain commas or quotes
-      const escapedRow = row.map(field => {
-        if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-          return `"${field.replace(/"/g, '""')}"`;
-        }
-        return field;
-      });
-      csvContent += escapedRow.join(',') + '\n';
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'product-bulk-update-template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'product-bulk-upload-template.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`Failed to download template: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   return (
@@ -205,11 +112,15 @@ export default function ProductsList() {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <Alert severity="info">
-              Upload an Excel file (.xlsx) to update multiple products at once. The file must have columns: SKU (required), Name, Price, Description, Available, CategoryDetails, Schedule, UseVendorSchedule, MediaUrls (pipe-separated URLs like "url1|url2|url3").
+              Upload an Excel file (.xlsx) to create or update products. The template includes a dropdown for VendorID selection.
+              <br /><br />
+              <strong>Required columns:</strong> SKU, VendorID (for new products)
+              <br />
+              <strong>Optional columns:</strong> Name, Price, Description, Available, CategoryDetails (JSON), Schedule (JSON), UseVendorSchedule, MediaUrls (pipe-separated)
             </Alert>
 
             <Button variant="outlined" onClick={downloadTemplate}>
-              Download CSV Template
+              Download Excel Template (with Vendor Dropdown)
             </Button>
 
             <input

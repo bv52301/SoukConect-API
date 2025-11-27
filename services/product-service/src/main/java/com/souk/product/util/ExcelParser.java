@@ -16,14 +16,15 @@ import java.util.List;
  *
  * Expected Excel format:
  * Column A: SKU (required)
- * Column B: Name
- * Column C: Price
- * Column D: Description
- * Column E: Available (true/false)
- * Column F: CategoryDetails (JSON string)
- * Column G: Schedule (JSON string)
- * Column H: UseVendorSchedule (true/false)
- * Column I: MediaUrls (pipe-separated URLs, e.g., "url1|url2|url3")
+ * Column B: VendorID (required for new products, optional for updates)
+ * Column C: Name
+ * Column D: Price
+ * Column E: Description
+ * Column F: Available (true/false)
+ * Column G: CategoryDetails (JSON string)
+ * Column H: Schedule (JSON string)
+ * Column I: UseVendorSchedule (true/false)
+ * Column J: MediaUrls (pipe-separated URLs, e.g., "url1|url2|url3")
  */
 public class ExcelParser {
 
@@ -31,6 +32,7 @@ public class ExcelParser {
 
     public static class ProductRow {
         public String sku;
+        public Long vendorId;
         public String name;
         public BigDecimal price;
         public String description;
@@ -75,50 +77,58 @@ public class ExcelParser {
         // Column A: SKU (required)
         productRow.sku = getCellValueAsString(row.getCell(0));
 
-        // Column B: Name
-        productRow.name = getCellValueAsString(row.getCell(1));
+        // Column B: VendorID (required for new products)
+        String vendorIdStr = getCellValueAsString(row.getCell(1));
+        if (vendorIdStr != null && !vendorIdStr.isEmpty()) {
+            try {
+                productRow.vendorId = Long.parseLong(vendorIdStr);
+            } catch (NumberFormatException ignored) {}
+        }
 
-        // Column C: Price
-        String priceStr = getCellValueAsString(row.getCell(2));
+        // Column C: Name
+        productRow.name = getCellValueAsString(row.getCell(2));
+
+        // Column D: Price
+        String priceStr = getCellValueAsString(row.getCell(3));
         if (priceStr != null && !priceStr.isEmpty()) {
             try {
                 productRow.price = new BigDecimal(priceStr);
             } catch (NumberFormatException ignored) {}
         }
 
-        // Column D: Description
-        productRow.description = getCellValueAsString(row.getCell(3));
+        // Column E: Description
+        productRow.description = getCellValueAsString(row.getCell(4));
 
-        // Column E: Available
-        String availableStr = getCellValueAsString(row.getCell(4));
+        // Column F: Available
+        String availableStr = getCellValueAsString(row.getCell(5));
         if (availableStr != null && !availableStr.isEmpty()) {
             productRow.available = Boolean.parseBoolean(availableStr);
         }
 
-        // Column F: CategoryDetails (JSON)
-        String categoryDetailsStr = getCellValueAsString(row.getCell(5));
+        // Column G: CategoryDetails (JSON)
+        String categoryDetailsStr = getCellValueAsString(row.getCell(6));
         if (categoryDetailsStr != null && !categoryDetailsStr.isEmpty()) {
             try {
                 productRow.categoryDetails = MAPPER.readTree(categoryDetailsStr);
             } catch (Exception ignored) {}
         }
 
-        // Column G: Schedule (JSON)
-        String scheduleStr = getCellValueAsString(row.getCell(6));
+        // Column H: Schedule (JSON)
+        String scheduleStr = getCellValueAsString(row.getCell(7));
         if (scheduleStr != null && !scheduleStr.isEmpty()) {
             try {
                 productRow.schedule = MAPPER.readTree(scheduleStr);
             } catch (Exception ignored) {}
         }
 
-        // Column H: UseVendorSchedule
-        String useVendorScheduleStr = getCellValueAsString(row.getCell(7));
+        // Column I: UseVendorSchedule
+        String useVendorScheduleStr = getCellValueAsString(row.getCell(8));
         if (useVendorScheduleStr != null && !useVendorScheduleStr.isEmpty()) {
             productRow.useVendorSchedule = Boolean.parseBoolean(useVendorScheduleStr);
         }
 
-        // Column I: MediaUrls (pipe-separated)
-        String mediaUrlsStr = getCellValueAsString(row.getCell(8));
+        // Column J: MediaUrls (pipe-separated)
+        String mediaUrlsStr = getCellValueAsString(row.getCell(9));
         if (mediaUrlsStr != null && !mediaUrlsStr.isEmpty()) {
             productRow.mediaUrls = new ArrayList<>();
             String[] urls = mediaUrlsStr.split("\\|");

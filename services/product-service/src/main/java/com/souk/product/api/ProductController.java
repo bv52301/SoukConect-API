@@ -14,10 +14,12 @@ import com.souk.product.api.dto.ProductCreateRequest;
 import com.souk.product.api.dto.ProductResponse;
 import com.souk.product.api.dto.ProductUpdateRequest;
 import com.souk.common.port.ProductQueryPort;
+import com.souk.product.util.ExcelTemplateGenerator;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
@@ -180,6 +182,29 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /** Download Excel template for bulk product upload with vendor dropdown */
+    @GetMapping(value = "/bulk-upload-template", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public ResponseEntity<byte[]> downloadBulkUploadTemplate() {
+        try {
+            List<Vendor> vendors = vendorPort.findAll();
+            byte[] excelBytes = ExcelTemplateGenerator.createProductBulkUploadTemplate(vendors);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=product-bulk-upload-template.xlsx");
+            headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            headers.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+            headers.add(HttpHeaders.PRAGMA, "no-cache");
+            headers.add(HttpHeaders.EXPIRES, "0");
+            headers.add("X-Content-Type-Options", "nosniff");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     /** Bulk update products from Excel file */
     @PostMapping(value = "/bulk-update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<com.souk.product.api.dto.BulkUpdateResult> bulkUpdate(
@@ -200,16 +225,49 @@ public class ProductController {
                 try {
                     // Find product by SKU
                     Optional<Product> productOpt = productQueryPort.findBySku(row.sku);
+                    Product product;
+                    boolean isNewProduct = productOpt.isEmpty();
 
-                    if (productOpt.isEmpty()) {
-                        results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
-                                rowNumber, row.sku, false, "Product not found with SKU: " + row.sku
-                        ));
-                        failureCount++;
-                        continue;
+                    if (isNewProduct) {
+                        // Creating new product - vendorId is mandatory
+                        if (row.vendorId == null) {
+                            results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
+                                    rowNumber, row.sku, false, "VendorID is required for new products"
+                            ));
+                            failureCount++;
+                            continue;
+                        }
+
+                        // Verify vendor exists
+                        Optional<Vendor> vendorOpt = vendorPort.findById(row.vendorId);
+                        if (vendorOpt.isEmpty()) {
+                            results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
+                                    rowNumber, row.sku, false, "Vendor not found with ID: " + row.vendorId
+                            ));
+                            failureCount++;
+                            continue;
+                        }
+
+                        product = new Product();
+                        product.setSku(row.sku);
+                        product.setVendorId(row.vendorId);
+                    } else {
+                        product = productOpt.get();
+
+                        // Update vendorId if provided
+                        if (row.vendorId != null) {
+                            // Verify vendor exists
+                            Optional<Vendor> vendorOpt = vendorPort.findById(row.vendorId);
+                            if (vendorOpt.isEmpty()) {
+                                results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
+                                        rowNumber, row.sku, false, "Vendor not found with ID: " + row.vendorId
+                                ));
+                                failureCount++;
+                                continue;
+                            }
+                            product.setVendorId(row.vendorId);
+                        }
                     }
-
-                    Product product = productOpt.get();
 
                     // Update fields if provided
                     if (row.name != null && !row.name.isEmpty()) {
@@ -255,11 +313,12 @@ public class ProductController {
                         product.setMedia(newMedia);
                     }
 
-                    // Save the updated product
+                    // Save the product
                     productPort.save(product);
 
+                    String action = isNewProduct ? "Created successfully" : "Updated successfully";
                     results.add(new com.souk.product.api.dto.BulkUpdateResult.RowResult(
-                            rowNumber, row.sku, true, "Updated successfully"
+                            rowNumber, row.sku, true, action
                     ));
                     successCount++;
 
@@ -364,7 +423,7 @@ public class ProductController {
 
         return productPort.findById(productId)
                 .map(product -> ResponseEntity.ok(product.getMedia()))
-                .orElseGet(()->ResponseEntity.<java.util.List<ProductMedia>>notFound().build());
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /** Upload media binary (multipart) and create ProductMedia with a served URL */
