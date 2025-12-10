@@ -3,6 +3,7 @@ package com.souk.cuisine.api;
 import com.souk.common.domain.Cuisine;
 import com.souk.common.domain.CuisineImage;
 import com.souk.common.port.DataAccessPort;
+import com.souk.common.adapters.jpa.repository.CuisineRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +11,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -21,11 +24,14 @@ public class CuisineController {
 
     private final DataAccessPort<Cuisine, Long> cuisinePort;
     private final DataAccessPort<CuisineImage, Long> cuisineImagePort;
+    private final CuisineRepository cuisineRepository;
 
     public CuisineController(DataAccessPort<Cuisine, Long> cuisinePort,
-                             DataAccessPort<CuisineImage, Long> cuisineImagePort) {
+                             DataAccessPort<CuisineImage, Long> cuisineImagePort,
+                             CuisineRepository cuisineRepository) {
         this.cuisinePort = cuisinePort;
         this.cuisineImagePort = cuisineImagePort;
+        this.cuisineRepository = cuisineRepository;
     }
 
     @GetMapping
@@ -35,20 +41,30 @@ public class CuisineController {
 
     @GetMapping("/categories")
     public List<CategoryWithImage> listDistinctCategories() {
-        var imagesByName = cuisineImagePort.findAll().stream()
+        // Build image maps for categories and subcategories
+        Map<String, String> categoryImages = cuisineImagePort.findAll().stream()
                 .filter(img -> img.getType() == CuisineImage.Type.CATEGORY)
                 .filter(img -> img.getName() != null && !img.getName().isBlank())
                 .collect(Collectors.toMap(img -> img.getName().toLowerCase(), CuisineImage::getImageUrl, (a, b) -> a));
 
-        return cuisinePort.findAll().stream()
-                .map(Cuisine::getCategory)
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .sorted(String::compareToIgnoreCase)
-                .map(cat -> new CategoryWithImage(cat, imagesByName.getOrDefault(cat.toLowerCase(), "None")))
-                .collect(Collectors.toList());
+        Map<String, String> subcategoryImages = cuisineImagePort.findAll().stream()
+                .filter(img -> img.getType() == CuisineImage.Type.SUBCATEGORY)
+                .filter(img -> img.getName() != null && !img.getName().isBlank())
+                .collect(Collectors.toMap(img -> img.getName().toLowerCase(), CuisineImage::getImageUrl, (a, b) -> a));
+
+        // Get distinct categories from database
+        List<CategoryWithImage> result = new ArrayList<>();
+
+        cuisineRepository.findDistinctCategories().forEach(cat ->
+            result.add(new CategoryWithImage(cat, categoryImages.getOrDefault(cat.toLowerCase(), "None")))
+        );
+
+        // Get distinct subcategories from database
+        cuisineRepository.findDistinctSubcategories().forEach(subcat ->
+            result.add(new CategoryWithImage(subcat, subcategoryImages.getOrDefault(subcat.toLowerCase(), "None")))
+        );
+
+        return result;
     }
 
     @GetMapping("/{id}")

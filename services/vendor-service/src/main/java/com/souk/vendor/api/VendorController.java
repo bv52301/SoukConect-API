@@ -55,11 +55,11 @@ public class VendorController {
         return stream.map(VendorResponse::from).toList();
     }
 
-    // --- Find vendors by supported category ---
+    // --- Find vendors by supported category (includes product search) ---
     @GetMapping("/by-category")
     public List<VendorResponse> listByCategory(@RequestParam("category") String category) {
         if (category == null || category.isBlank()) return List.of();
-        return vendorRepo.findByCategory(category.trim()).stream()
+        return vendorRepo.findByCategoryIncludingProducts(category.trim()).stream()
                 .map(VendorResponse::from)
                 .toList();
     }
