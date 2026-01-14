@@ -14,6 +14,9 @@ public class Customer {
     @Column(name = "customer_id")
     private Long id;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
@@ -39,6 +42,9 @@ public class Customer {
     // --- Getters & Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }

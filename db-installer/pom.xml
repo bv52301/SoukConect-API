@@ -45,6 +45,12 @@
                                         <include name="**/*.sql"/>
                                     </fileset>
                                 </copy>
+                                <!-- Copy migration script to root of sql directory -->
+                                <copy todir="${project.build.directory}/sql" overwrite="true">
+                                    <fileset dir="${project.basedir}/../sql_files" erroronmissingdir="false">
+                                        <include name="MIGRATION_*.sql"/>
+                                    </fileset>
+                                </copy>
                             </target>
                         </configuration>
                     </execution>

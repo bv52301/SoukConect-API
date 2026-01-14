@@ -18,6 +18,9 @@ public class Vendor {
     @Column(name = "vendor_id")
     private Long vendorId;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(nullable = false, length = 100)
     private String name;
 
@@ -74,6 +77,9 @@ public class Vendor {
     // === Getters & Setters ===
     public Long getVendorId() { return vendorId; }
     public void setVendorId(Long vendorId) { this.vendorId = vendorId; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
