@@ -1,0 +1,141 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: auth-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?useSSL=false&serverTimezone=UTC
+    username: ${DB_USERNAME:soukconect}
+    password: ${DB_PASSWORD:soukconect}
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        format_sql: true
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      username: ${REDIS_USERNAME:}
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 20
+          min-idle: 10
+          max-wait: 2000ms
+
+  # Mail Configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  # OAuth2 Client Configuration (for Spring Security OAuth2)
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: email, profile
+          facebook:
+            client-id: ${FACEBOOK_CLIENT_ID:}
+            client-secret: ${FACEBOOK_CLIENT_SECRET:}
+            scope: email, public_profile
+          apple:
+            client-id: ${APPLE_CLIENT_ID:}
+            client-secret: ${APPLE_CLIENT_SECRET:}
+            authorization-grant-type: authorization_code
+            scope: email, name
+
+# Application Custom Properties
+app:
+  # JWT Configuration
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-minimum-32-chars}
+    access-token-expiration: 900000    # 15 minutes in milliseconds
+    refresh-token-expiration: 604800000 # 7 days in milliseconds
+    issuer: soukconect
+
+  # Email Configuration
+  email:
+    from-address: ${MAIL_FROM:noreply@soukconect.com}
+    from-name: SoukConect
+    base-url: ${APP_BASE_URL:http://localhost:3000}
+    verify-email-path: /verify-email
+    reset-password-path: /reset-password
+
+  # OAuth Configuration
+  oauth:
+    success-redirect-url: ${OAUTH_SUCCESS_URL:http://localhost:3000/oauth/callback}
+    failure-redirect-url: ${OAUTH_FAILURE_URL:http://localhost:3000/login?error=oauth_failed}
+    google:
+      enabled: ${GOOGLE_OAUTH_ENABLED:false}
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+    apple:
+      enabled: ${APPLE_OAUTH_ENABLED:false}
+      client-id: ${APPLE_CLIENT_ID:}
+      team-id: ${APPLE_TEAM_ID:}
+      key-id: ${APPLE_KEY_ID:}
+      private-key: ${APPLE_PRIVATE_KEY:}
+    facebook:
+      enabled: ${FACEBOOK_OAUTH_ENABLED:false}
+      client-id: ${FACEBOOK_CLIENT_ID:}
+      client-secret: ${FACEBOOK_CLIENT_SECRET:}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.souk: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
