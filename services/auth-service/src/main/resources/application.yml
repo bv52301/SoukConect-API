@@ -7,10 +7,10 @@ spring:
 
   # Database Configuration
   datasource:
-    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?useSSL=false&serverTimezone=UTC
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
     username: ${DB_USERNAME:soukconect}
     password: ${DB_PASSWORD:soukconect}
-    driver-class-name: org.mariadb.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -20,10 +20,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false
+    open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MariaDBDialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
   # Redis Configuration
@@ -64,18 +67,13 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID:}
-            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            client-id: ${GOOGLE_CLIENT_ID:placeholder-google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:placeholder-google-client-secret}
             scope: email, profile
           facebook:
-            client-id: ${FACEBOOK_CLIENT_ID:}
-            client-secret: ${FACEBOOK_CLIENT_SECRET:}
+            client-id: ${FACEBOOK_CLIENT_ID:placeholder-facebook-client-id}
+            client-secret: ${FACEBOOK_CLIENT_SECRET:placeholder-facebook-client-secret}
             scope: email, public_profile
-          apple:
-            client-id: ${APPLE_CLIENT_ID:}
-            client-secret: ${APPLE_CLIENT_SECRET:}
-            authorization-grant-type: authorization_code
-            scope: email, name
 
 # Application Custom Properties
 app:

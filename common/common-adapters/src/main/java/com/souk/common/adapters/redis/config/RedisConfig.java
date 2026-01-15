@@ -244,8 +244,8 @@ public class RedisConfig {
     /**
      * RedisTemplate with String serialization (for counters, flags, simple values).
      */
-    @Bean
-    public RedisTemplate<String, String> stringRedisTemplate(RedisConnectionFactory factory) {
+    @Bean(name = "stringKeyValueRedisTemplate")
+    public RedisTemplate<String, String> stringKeyValueRedisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
 

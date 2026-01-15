@@ -156,7 +156,7 @@ PORT="${PORT:-8080}"
 JAVA_OPTS="${JAVA_OPTS:-}"
 mkdir -p "${DIR}/logs"
 TS="$(date +%Y%m%d-%H%M%S)"
-LOG_FILE="${DIR}/logs/combined-service.log.${TS}"
+LOG_FILE="${DIR}/logs/${TS}.combined-service.log"
 nohup java ${JAVA_OPTS} -Dserver.port="${PORT}" -Dserver.address=0.0.0.0 -jar "${JAR}" >"${LOG_FILE}" 2>&1 &
 echo $! > "${DIR}/app.pid"
 echo "Started combined-service on port ${PORT}. Logs: ${LOG_FILE} (PID $(cat \"${DIR}/app.pid\"))"
@@ -172,7 +172,7 @@ set "JAVA_OPTS=%JAVA_OPTS%"
 set "LOGDIR=%DIR%logs"
 if not exist "%LOGDIR%" mkdir "%LOGDIR%"
 for /f %%i in ('powershell -NoProfile -Command "(Get-Date -Format 'yyyyMMdd-HHmmss')"') do set TS=%%i
-set "LOGFILE=%LOGDIR%\combined-service.log.%TS%"
+set "LOGFILE=%LOGDIR%\%TS%.combined-service.log"
 powershell -NoProfile -Command ^
   "$ErrorActionPreference='Stop';" ^
   "$dir = (Get-Item -LiteralPath '%DIR%').FullName;" ^
@@ -181,7 +181,7 @@ powershell -NoProfile -Command ^
   "$javaOpts = $env:JAVA_OPTS;" ^
   "$args = @(); if ($javaOpts) { $args += $javaOpts -split ' ' }" ^
   "$args += ('-Dserver.port=' + $port); $args += '-Dserver.address=0.0.0.0'; $args += '-jar'; $args += $jar;" ^
-  "$log = Join-Path $dir ('logs\\combined-service.log.' + (Get-Date -Format 'yyyyMMdd-HHmmss'));" ^
+  "$log = Join-Path $dir ('logs\\' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.combined-service.log');" ^
   "$p = Start-Process -FilePath 'java' -ArgumentList $args -RedirectStandardOutput $log -RedirectStandardError $log -PassThru -WindowStyle Hidden;" ^
   "$p.Id | Out-File -Encoding ascii (Join-Path $dir 'app.pid');" ^
   "Write-Output ('Started combined-service PID ' + $p.Id + ' Port ' + $port + ' Logs ' + $log)"
