@@ -55,6 +55,25 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>stage-redis-files</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo>Staging Redis installation files</echo>
+                                <mkdir dir="${project.build.directory}/redis"/>
+                                <!-- Copy Redis scripts and configs -->
+                                <copy todir="${project.build.directory}/redis" overwrite="true">
+                                    <fileset dir="${project.basedir}/../redis_files" erroronmissingdir="false">
+                                        <include name="**/*"/>
+                                    </fileset>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>write-bundle-version</id>
                         <phase>prepare-package</phase>
                         <goals>

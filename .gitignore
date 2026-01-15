@@ -39,3 +39,6 @@ web-admin/.env*
 # Ignore OS files
 .DS_Store
 Thumbs.db
+
+#Ignore claude tempdirtories
+tmpclaude-*

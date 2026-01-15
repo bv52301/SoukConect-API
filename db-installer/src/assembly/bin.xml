@@ -45,6 +45,20 @@
             <lineEnding>unix</lineEnding>
             <fileMode>0644</fileMode>
         </fileSet>
+        <!-- Include staged Redis files from target/redis -->
+        <fileSet>
+            <directory>${project.build.directory}/redis</directory>
+            <outputDirectory>/redis</outputDirectory>
+            <includes>
+                <include>**/*.sh</include>
+                <include>**/*.bat</include>
+                <include>**/*.yml</include>
+                <include>**/*.json</include>
+                <include>**/*.md</include>
+            </includes>
+            <lineEnding>unix</lineEnding>
+            <fileMode>0755</fileMode>
+        </fileSet>
         <!-- Include db-installer specific README -->
         <fileSet>
             <directory>${project.basedir}</directory>

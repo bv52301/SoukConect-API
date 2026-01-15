@@ -1,0 +1,313 @@
+{
+  "version": "1.0.0",
+  "description": "Redis key structure reference for SoukConect E-Commerce Platform",
+  "database": 0,
+  "keyPrefix": "soukconect",
+  "keyPrefixDescription": "All keys are prefixed with 'soukconect:' for namespace isolation",
+  "namespaces": {
+    "auth": "Authentication and session management",
+    "cache": "Application caching",
+    "cart": "Shopping carts",
+    "order": "Order data",
+    "vendor": "Vendor information",
+    "product": "Product catalog",
+    "ratelimit": "API rate limiting",
+    "analytics": "Metrics and analytics",
+    "queue": "Background job queues",
+    "lock": "Distributed locks",
+    "realtime": "Real-time features",
+    "config": "Application configuration"
+  },
+  "keys": {
+    "soukconect:auth:refresh_token:{uuid}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "7d",
+      "description": "Refresh token storage for token rotation",
+      "example": "soukconect:auth:refresh_token:550e8400-e29b-41d4-9876-1a2b3c4d5e6f",
+      "value_example": "{\"user_id\":100,\"issued_at\":\"2026-01-14T10:00:00Z\",\"device\":\"Chrome/120.0\"}"
+    },
+    "soukconect:auth:blacklist:access_token:{jti}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "15m",
+      "description": "Blacklisted JWT tokens after logout",
+      "example": "soukconect:auth:blacklist:access_token:abc123def456"
+    },
+    "soukconect:auth:email_verification:{token}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "24h",
+      "description": "Email verification tokens",
+      "example": "soukconect:auth:email_verification:ver_8f7e6d5c4b3a2"
+    },
+    "soukconect:auth:password_reset:{token}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "Password reset tokens",
+      "example": "soukconect:auth:password_reset:rst_9a8b7c6d5e4f3"
+    },
+    "soukconect:auth:failed_login:{email}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "15m",
+      "description": "Failed login attempt counter for rate limiting",
+      "example": "soukconect:auth:failed_login:john@example.com"
+    },
+    "soukconect:auth:sessions:{user_id}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "30d",
+      "description": "Active session IDs for a user",
+      "example": "soukconect:auth:sessions:100"
+    },
+    "soukconect:auth:mfa:code:{user_id}": {
+      "type": "string",
+      "format": "string",
+      "ttl": "5m",
+      "description": "MFA verification code",
+      "example": "soukconect:auth:mfa:code:100"
+    },
+    "soukconect:cache:user:profile:{user_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "User profile with roles and business profiles",
+      "example": "soukconect:cache:user:profile:100"
+    },
+    "soukconect:cache:user:roles:{user_id}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "1h",
+      "description": "User role list",
+      "example": "soukconect:cache:user:roles:100",
+      "value_example": "[\"VENDOR\",\"CUSTOMER\"]"
+    },
+    "soukconect:cache:vendor:details:{vendor_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "30m",
+      "description": "Vendor details cache",
+      "example": "soukconect:cache:vendor:details:50"
+    },
+    "soukconect:cache:product:details:{product_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "30m",
+      "description": "Product details cache",
+      "example": "soukconect:cache:product:details:1001"
+    },
+    "soukconect:cache:categories": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "Complete category and subcategory list",
+      "example": "soukconect:cache:categories"
+    },
+    "soukconect:cache:homepage:{version}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "10m",
+      "description": "Homepage data bundle",
+      "example": "soukconect:cache:homepage:v1"
+    },
+    "soukconect:cart:{user_id}": {
+      "type": "hash",
+      "format": "map<product_id, quantity>",
+      "ttl": "7d",
+      "description": "User shopping cart",
+      "example": "soukconect:cart:100",
+      "value_example": "{\"1001\":\"2\",\"1002\":\"1\"}"
+    },
+    "soukconect:cart:guest:{session_id}": {
+      "type": "hash",
+      "format": "map<product_id, quantity>",
+      "ttl": "24h",
+      "description": "Guest shopping cart",
+      "example": "soukconect:cart:guest:sess_abc123xyz"
+    },
+    "soukconect:order:details:{order_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "Order details cache",
+      "example": "soukconect:order:details:5001"
+    },
+    "soukconect:order:customer:{customer_id}": {
+      "type": "zset",
+      "format": "sorted_set<order_id, timestamp>",
+      "ttl": "30m",
+      "description": "Orders by customer sorted by date",
+      "example": "soukconect:order:customer:25"
+    },
+    "soukconect:order:vendor:{vendor_id}": {
+      "type": "zset",
+      "format": "sorted_set<order_id, timestamp>",
+      "ttl": "30m",
+      "description": "Orders by vendor sorted by date",
+      "example": "soukconect:order:vendor:50"
+    },
+    "soukconect:order:status:{order_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "24h",
+      "description": "Order status tracking",
+      "example": "soukconect:order:status:5001"
+    },
+    "soukconect:vendor:category:{category}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "15m",
+      "description": "Vendor IDs supporting this category",
+      "example": "soukconect:vendor:category:electronics"
+    },
+    "soukconect:vendor:active:{vendor_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "5m",
+      "description": "Vendor online status",
+      "example": "soukconect:vendor:active:50"
+    },
+    "soukconect:vendor:geo:locations": {
+      "type": "geospatial",
+      "format": "geo<vendor_id, lat, long>",
+      "ttl": "persistent",
+      "description": "Vendor geospatial coordinates",
+      "example": "soukconect:vendor:geo:locations"
+    },
+    "soukconect:product:inventory:{product_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "5m",
+      "description": "Product inventory levels",
+      "example": "soukconect:product:inventory:1001"
+    },
+    "soukconect:product:vendor:{vendor_id}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "15m",
+      "description": "Product IDs by vendor",
+      "example": "soukconect:product:vendor:50"
+    },
+    "soukconect:product:category:{category}:{subcategory}": {
+      "type": "zset",
+      "format": "sorted_set<product_id, score>",
+      "ttl": "15m",
+      "description": "Products by category sorted by popularity/price",
+      "example": "soukconect:product:category:electronics:phones"
+    },
+    "soukconect:product:search:{query_hash}": {
+      "type": "list",
+      "format": "string[]",
+      "ttl": "10m",
+      "description": "Cached search results",
+      "example": "soukconect:product:search:md5_abc123"
+    },
+    "soukconect:ratelimit:user:{user_id}:{endpoint}:{window}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "dynamic",
+      "description": "Request counter for rate limiting by user",
+      "example": "soukconect:ratelimit:user:100:/api/orders:1min"
+    },
+    "soukconect:ratelimit:ip:{ip_address}:{endpoint}:{window}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "dynamic",
+      "description": "Request counter for rate limiting by IP",
+      "example": "soukconect:ratelimit:ip:192.168.1.1:/api/login:1min"
+    },
+    "soukconect:analytics:trending:products:{period}": {
+      "type": "zset",
+      "format": "sorted_set<product_id, view_count>",
+      "ttl": "1h",
+      "description": "Trending products by time period",
+      "example": "soukconect:analytics:trending:products:today"
+    },
+    "soukconect:analytics:product:views:{product_id}:{date}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "30d",
+      "description": "Daily product view count",
+      "example": "soukconect:analytics:product:views:1001:2026-01-14"
+    },
+    "soukconect:analytics:vendor:metrics:{vendor_id}:{metric}:{date}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "7d",
+      "description": "Vendor performance metrics",
+      "example": "soukconect:analytics:vendor:metrics:50:sales:2026-01-14"
+    },
+    "soukconect:queue:email:{priority}": {
+      "type": "list",
+      "format": "JSON[]",
+      "ttl": "persistent",
+      "description": "Email send queue by priority",
+      "example": "soukconect:queue:email:high"
+    },
+    "soukconect:queue:order:processing": {
+      "type": "list",
+      "format": "JSON[]",
+      "ttl": "persistent",
+      "description": "Order processing queue",
+      "example": "soukconect:queue:order:processing"
+    },
+    "soukconect:lock:inventory:{product_id}": {
+      "type": "string",
+      "format": "string",
+      "ttl": "30s",
+      "description": "Inventory lock during checkout",
+      "example": "soukconect:lock:inventory:1001"
+    },
+    "soukconect:lock:order:create:{user_id}": {
+      "type": "string",
+      "format": "string",
+      "ttl": "10s",
+      "description": "Lock to prevent duplicate order submission",
+      "example": "soukconect:lock:order:create:100"
+    },
+    "soukconect:realtime:online_users": {
+      "type": "zset",
+      "format": "sorted_set<user_id, last_active_timestamp>",
+      "ttl": "persistent",
+      "description": "Currently online users",
+      "example": "soukconect:realtime:online_users"
+    },
+    "soukconect:realtime:vendor:online:{vendor_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "5m",
+      "description": "Vendor online status for real-time updates",
+      "example": "soukconect:realtime:vendor:online:50"
+    },
+    "soukconect:realtime:notification:{user_id}": {
+      "type": "list",
+      "format": "JSON[]",
+      "ttl": "7d",
+      "description": "User notification queue",
+      "example": "soukconect:realtime:notification:100"
+    },
+    "soukconect:config:ratelimit": {
+      "type": "hash",
+      "format": "map<string, string>",
+      "ttl": "persistent",
+      "description": "Rate limit configuration thresholds",
+      "example": "soukconect:config:ratelimit"
+    },
+    "soukconect:config:cache": {
+      "type": "hash",
+      "format": "map<string, string>",
+      "ttl": "persistent",
+      "description": "Cache TTL configuration",
+      "example": "soukconect:config:cache"
+    },
+    "soukconect:config:features": {
+      "type": "hash",
+      "format": "map<string, boolean>",
+      "ttl": "persistent",
+      "description": "Feature flags",
+      "example": "soukconect:config:features"
+    }
+  }
+}

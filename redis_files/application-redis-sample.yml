@@ -1,0 +1,270 @@
+# ============================================================
+# Sample Redis Configuration for SoukConect
+# ============================================================
+#
+# Copy this file to your service's src/main/resources/application.yml
+# and customize as needed for your environment.
+#
+# Profiles:
+#   - dev: Local development (no SSL)
+#   - staging: Staging environment
+#   - prod: Production environment (with SSL)
+#
+# ============================================================
+
+# ============================================================
+# Default Configuration (Development)
+# ============================================================
+spring:
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    username: ${REDIS_USERNAME:}
+    database: 0
+    timeout: 2000ms
+
+    # SSL/TLS (disabled by default)
+    ssl:
+      enabled: false
+
+    # Lettuce connection pool
+    lettuce:
+      pool:
+        max-active: 50
+        max-idle: 20
+        min-idle: 10
+        max-wait: 2000ms
+      shutdown-timeout: 100ms
+
+---
+# ============================================================
+# Development Profile (Local Redis)
+# ============================================================
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  redis:
+    host: localhost
+    port: 6379
+    password: ""
+    username: ""
+    database: 0
+
+    ssl:
+      enabled: false
+
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: 2000ms
+
+---
+# ============================================================
+# Staging Profile
+# ============================================================
+spring:
+  config:
+    activate:
+      on-profile: staging
+
+  redis:
+    host: ${REDIS_HOST:redis-staging.example.com}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD}
+    username: ${REDIS_USERNAME:}
+    database: 0
+    timeout: 3000ms
+
+    ssl:
+      enabled: false  # Internal network, no SSL needed
+
+    lettuce:
+      pool:
+        max-active: 50
+        max-idle: 25
+        min-idle: 10
+        max-wait: 2000ms
+
+---
+# ============================================================
+# Production Profile (SSL/TLS Enabled)
+# ============================================================
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  redis:
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT:6380}  # SSL port
+    password: ${REDIS_PASSWORD}
+    username: ${REDIS_USERNAME:default}  # Redis 6+ ACL username
+    database: 0
+    timeout: 5000ms
+
+    # Enable SSL/TLS for production
+    ssl:
+      enabled: true
+
+    # Production connection pool settings
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 50
+        min-idle: 20
+        max-wait: 3000ms
+      shutdown-timeout: 200ms
+
+---
+# ============================================================
+# Redis Cluster Configuration (if using cluster)
+# ============================================================
+spring:
+  config:
+    activate:
+      on-profile: cluster
+
+  redis:
+    password: ${REDIS_PASSWORD}
+    username: ${REDIS_USERNAME:}
+    timeout: 5000ms
+
+    ssl:
+      enabled: ${REDIS_SSL_ENABLED:false}
+
+    # Cluster nodes (comma-separated)
+    cluster:
+      nodes: ${REDIS_CLUSTER_NODES}  # e.g., "node1:6379,node2:6379,node3:6379"
+      max-redirects: 3
+
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 50
+        min-idle: 20
+        max-wait: 3000ms
+
+---
+# ============================================================
+# Redis Sentinel Configuration (if using sentinel for HA)
+# ============================================================
+spring:
+  config:
+    activate:
+      on-profile: sentinel
+
+  redis:
+    password: ${REDIS_PASSWORD}
+    username: ${REDIS_USERNAME:}
+    database: 0
+    timeout: 5000ms
+
+    ssl:
+      enabled: ${REDIS_SSL_ENABLED:false}
+
+    # Sentinel configuration
+    sentinel:
+      master: ${REDIS_SENTINEL_MASTER:mymaster}
+      nodes: ${REDIS_SENTINEL_NODES}  # e.g., "sentinel1:26379,sentinel2:26379,sentinel3:26379"
+      password: ${REDIS_SENTINEL_PASSWORD:}
+
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 50
+        min-idle: 20
+        max-wait: 3000ms
+
+---
+# ============================================================
+# Spring Boot Actuator Health Check
+# ============================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    redis:
+      enabled: true
+
+---
+# ============================================================
+# Logging Configuration for Redis
+# ============================================================
+logging:
+  level:
+    com.souk.common.adapters.redis: INFO
+    org.springframework.data.redis: INFO
+    io.lettuce.core: WARN
+
+---
+# ============================================================
+# Environment Variables Reference
+# ============================================================
+#
+# Set these environment variables for your deployment:
+#
+# Development (Local):
+#   - No environment variables needed (uses defaults)
+#
+# Staging:
+#   export REDIS_HOST=redis-staging.example.com
+#   export REDIS_PASSWORD=your-staging-password
+#
+# Production:
+#   export REDIS_HOST=redis-prod.example.com
+#   export REDIS_PORT=6380
+#   export REDIS_PASSWORD=your-secure-production-password
+#   export REDIS_USERNAME=default
+#   export REDIS_SSL_ENABLED=true
+#
+# Redis Cluster:
+#   export REDIS_CLUSTER_NODES=node1:6379,node2:6379,node3:6379
+#   export REDIS_PASSWORD=cluster-password
+#
+# Redis Sentinel:
+#   export REDIS_SENTINEL_MASTER=mymaster
+#   export REDIS_SENTINEL_NODES=sentinel1:26379,sentinel2:26379
+#   export REDIS_PASSWORD=data-node-password
+#   export REDIS_SENTINEL_PASSWORD=sentinel-password
+#
+# ============================================================
+
+---
+# ============================================================
+# AWS ElastiCache Configuration Example
+# ============================================================
+#
+# spring:
+#   redis:
+#     host: your-cache.xxxxx.cache.amazonaws.com
+#     port: 6379
+#     password: ""  # ElastiCache without AUTH
+#     ssl:
+#       enabled: false  # Or true for in-transit encryption
+#
+# ============================================================
+
+---
+# ============================================================
+# Azure Redis Cache Configuration Example
+# ============================================================
+#
+# spring:
+#   redis:
+#     host: your-cache.redis.cache.windows.net
+#     port: 6380
+#     password: ${REDIS_PRIMARY_KEY}
+#     ssl:
+#       enabled: true
+#
+# ============================================================

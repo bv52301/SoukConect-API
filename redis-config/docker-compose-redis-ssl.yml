@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  redis-ssl:
+    image: redis:7-alpine
+    container_name: soukconect-redis-ssl
+    ports:
+      - "6380:6380"
+    volumes:
+      - ./redis-ssl-certs:/etc/ssl/redis:ro
+      - redis-data:/data
+    command: >
+      redis-server
+      --port 0
+      --tls-port 6380
+      --tls-cert-file /etc/ssl/redis/redis.crt
+      --tls-key-file /etc/ssl/redis/redis.key
+      --tls-ca-cert-file /etc/ssl/redis/ca.crt
+      --tls-auth-clients no
+      --requirepass ${REDIS_PASSWORD:-your-secure-password}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --save 300 100
+      --save 900 10
+      --appendonly yes
+      --appendfsync everysec
+    networks:
+      - soukconect-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "--tls", "--cert", "/etc/ssl/redis/redis.crt", "--key", "/etc/ssl/redis/redis.key", "--cacert", "/etc/ssl/redis/ca.crt", "-a", "${REDIS_PASSWORD:-your-secure-password}", "PING"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: soukconect-redis-commander
+    environment:
+      - REDIS_HOSTS=ssl-redis:${REDIS_HOST:-redis-ssl}:6380:0:${REDIS_PASSWORD:-your-secure-password}
+    ports:
+      - "8081:8081"
+    networks:
+      - soukconect-network
+    depends_on:
+      - redis-ssl
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  soukconect-network:
+    driver: bridge

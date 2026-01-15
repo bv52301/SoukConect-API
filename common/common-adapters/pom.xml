@@ -33,6 +33,25 @@
                 <artifactId>spring-boot-starter-data-redis</artifactId>
             </dependency>
 
+            <!-- Lettuce Redis Client (included in spring-boot-starter-data-redis) -->
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+            </dependency>
+
+            <!-- Apache Commons Pool2 (for Redis connection pooling) -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-pool2</artifactId>
+            </dependency>
+
+            <!-- Spring Boot Actuator (for health checks) -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-actuator</artifactId>
+                <optional>true</optional>
+            </dependency>
+
             <!-- Elasticsearch client (optional) -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>

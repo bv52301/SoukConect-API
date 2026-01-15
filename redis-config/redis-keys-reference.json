@@ -1,0 +1,311 @@
+{
+  "version": "1.0.0",
+  "description": "Redis key structure reference for SoukConect E-Commerce Platform",
+  "database": 0,
+  "namespaces": {
+    "auth": "Authentication and session management",
+    "cache": "Application caching",
+    "cart": "Shopping carts",
+    "order": "Order data",
+    "vendor": "Vendor information",
+    "product": "Product catalog",
+    "ratelimit": "API rate limiting",
+    "analytics": "Metrics and analytics",
+    "queue": "Background job queues",
+    "lock": "Distributed locks",
+    "realtime": "Real-time features",
+    "config": "Application configuration"
+  },
+  "keys": {
+    "auth:refresh_token:{uuid}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "7d",
+      "description": "Refresh token storage for token rotation",
+      "example": "auth:refresh_token:550e8400-e29b-41d4-9876-1a2b3c4d5e6f",
+      "value_example": "{\"user_id\":100,\"issued_at\":\"2026-01-14T10:00:00Z\",\"device\":\"Chrome/120.0\"}"
+    },
+    "auth:blacklist:access_token:{jti}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "15m",
+      "description": "Blacklisted JWT tokens after logout",
+      "example": "auth:blacklist:access_token:abc123def456"
+    },
+    "auth:email_verification:{token}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "24h",
+      "description": "Email verification tokens",
+      "example": "auth:email_verification:ver_8f7e6d5c4b3a2"
+    },
+    "auth:password_reset:{token}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "Password reset tokens",
+      "example": "auth:password_reset:rst_9a8b7c6d5e4f3"
+    },
+    "auth:failed_login:{email}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "15m",
+      "description": "Failed login attempt counter for rate limiting",
+      "example": "auth:failed_login:john@example.com"
+    },
+    "auth:sessions:{user_id}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "30d",
+      "description": "Active session IDs for a user",
+      "example": "auth:sessions:100"
+    },
+    "auth:mfa:code:{user_id}": {
+      "type": "string",
+      "format": "string",
+      "ttl": "5m",
+      "description": "MFA verification code",
+      "example": "auth:mfa:code:100"
+    },
+    "cache:user:profile:{user_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "User profile with roles and business profiles",
+      "example": "cache:user:profile:100"
+    },
+    "cache:user:roles:{user_id}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "1h",
+      "description": "User role list",
+      "example": "cache:user:roles:100",
+      "value_example": "[\"VENDOR\",\"CUSTOMER\"]"
+    },
+    "cache:vendor:details:{vendor_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "30m",
+      "description": "Vendor details cache",
+      "example": "cache:vendor:details:50"
+    },
+    "cache:product:details:{product_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "30m",
+      "description": "Product details cache",
+      "example": "cache:product:details:1001"
+    },
+    "cache:categories": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "Complete category and subcategory list",
+      "example": "cache:categories"
+    },
+    "cache:homepage:{version}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "10m",
+      "description": "Homepage data bundle",
+      "example": "cache:homepage:v1"
+    },
+    "cart:{user_id}": {
+      "type": "hash",
+      "format": "map<product_id, quantity>",
+      "ttl": "7d",
+      "description": "User shopping cart",
+      "example": "cart:100",
+      "value_example": "{\"1001\":\"2\",\"1002\":\"1\"}"
+    },
+    "cart:guest:{session_id}": {
+      "type": "hash",
+      "format": "map<product_id, quantity>",
+      "ttl": "24h",
+      "description": "Guest shopping cart",
+      "example": "cart:guest:sess_abc123xyz"
+    },
+    "order:details:{order_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "1h",
+      "description": "Order details cache",
+      "example": "order:details:5001"
+    },
+    "order:customer:{customer_id}": {
+      "type": "zset",
+      "format": "sorted_set<order_id, timestamp>",
+      "ttl": "30m",
+      "description": "Orders by customer sorted by date",
+      "example": "order:customer:25"
+    },
+    "order:vendor:{vendor_id}": {
+      "type": "zset",
+      "format": "sorted_set<order_id, timestamp>",
+      "ttl": "30m",
+      "description": "Orders by vendor sorted by date",
+      "example": "order:vendor:50"
+    },
+    "order:status:{order_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "24h",
+      "description": "Order status tracking",
+      "example": "order:status:5001"
+    },
+    "vendor:category:{category}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "15m",
+      "description": "Vendor IDs supporting this category",
+      "example": "vendor:category:electronics"
+    },
+    "vendor:active:{vendor_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "5m",
+      "description": "Vendor online status",
+      "example": "vendor:active:50"
+    },
+    "vendor:geo:locations": {
+      "type": "geospatial",
+      "format": "geo<vendor_id, lat, long>",
+      "ttl": "persistent",
+      "description": "Vendor geospatial coordinates",
+      "example": "vendor:geo:locations"
+    },
+    "product:inventory:{product_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "5m",
+      "description": "Product inventory levels",
+      "example": "product:inventory:1001"
+    },
+    "product:vendor:{vendor_id}": {
+      "type": "set",
+      "format": "string[]",
+      "ttl": "15m",
+      "description": "Product IDs by vendor",
+      "example": "product:vendor:50"
+    },
+    "product:category:{category}:{subcategory}": {
+      "type": "zset",
+      "format": "sorted_set<product_id, score>",
+      "ttl": "15m",
+      "description": "Products by category sorted by popularity/price",
+      "example": "product:category:electronics:phones"
+    },
+    "product:search:{query_hash}": {
+      "type": "list",
+      "format": "string[]",
+      "ttl": "10m",
+      "description": "Cached search results",
+      "example": "product:search:md5_abc123"
+    },
+    "ratelimit:user:{user_id}:{endpoint}:{window}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "dynamic",
+      "description": "Request counter for rate limiting by user",
+      "example": "ratelimit:user:100:/api/orders:1min"
+    },
+    "ratelimit:ip:{ip_address}:{endpoint}:{window}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "dynamic",
+      "description": "Request counter for rate limiting by IP",
+      "example": "ratelimit:ip:192.168.1.1:/api/login:1min"
+    },
+    "analytics:trending:products:{period}": {
+      "type": "zset",
+      "format": "sorted_set<product_id, view_count>",
+      "ttl": "1h",
+      "description": "Trending products by time period",
+      "example": "analytics:trending:products:today"
+    },
+    "analytics:product:views:{product_id}:{date}": {
+      "type": "string",
+      "format": "integer",
+      "ttl": "30d",
+      "description": "Daily product view count",
+      "example": "analytics:product:views:1001:2026-01-14"
+    },
+    "analytics:vendor:metrics:{vendor_id}:{metric}:{date}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "7d",
+      "description": "Vendor performance metrics",
+      "example": "analytics:vendor:metrics:50:sales:2026-01-14"
+    },
+    "queue:email:{priority}": {
+      "type": "list",
+      "format": "JSON[]",
+      "ttl": "persistent",
+      "description": "Email send queue by priority",
+      "example": "queue:email:high"
+    },
+    "queue:order:processing": {
+      "type": "list",
+      "format": "JSON[]",
+      "ttl": "persistent",
+      "description": "Order processing queue",
+      "example": "queue:order:processing"
+    },
+    "lock:inventory:{product_id}": {
+      "type": "string",
+      "format": "string",
+      "ttl": "30s",
+      "description": "Inventory lock during checkout",
+      "example": "lock:inventory:1001"
+    },
+    "lock:order:create:{user_id}": {
+      "type": "string",
+      "format": "string",
+      "ttl": "10s",
+      "description": "Lock to prevent duplicate order submission",
+      "example": "lock:order:create:100"
+    },
+    "realtime:online_users": {
+      "type": "zset",
+      "format": "sorted_set<user_id, last_active_timestamp>",
+      "ttl": "persistent",
+      "description": "Currently online users",
+      "example": "realtime:online_users"
+    },
+    "realtime:vendor:online:{vendor_id}": {
+      "type": "string",
+      "format": "JSON",
+      "ttl": "5m",
+      "description": "Vendor online status for real-time updates",
+      "example": "realtime:vendor:online:50"
+    },
+    "realtime:notification:{user_id}": {
+      "type": "list",
+      "format": "JSON[]",
+      "ttl": "7d",
+      "description": "User notification queue",
+      "example": "realtime:notification:100"
+    },
+    "config:ratelimit": {
+      "type": "hash",
+      "format": "map<string, string>",
+      "ttl": "persistent",
+      "description": "Rate limit configuration thresholds",
+      "example": "config:ratelimit"
+    },
+    "config:cache": {
+      "type": "hash",
+      "format": "map<string, string>",
+      "ttl": "persistent",
+      "description": "Cache TTL configuration",
+      "example": "config:cache"
+    },
+    "config:features": {
+      "type": "hash",
+      "format": "map<string, boolean>",
+      "ttl": "persistent",
+      "description": "Feature flags",
+      "example": "config:features"
+    }
+  }
+}
