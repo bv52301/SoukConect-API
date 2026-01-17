@@ -6,3 +6,6 @@ set $vendors_origin   $api_origin;
 set $products_origin  $api_origin;
 set $customers_origin $api_origin;
 set $cuisines_origin  $api_origin;
+
+# Auth service runs on port 8080
+set $auth_origin      http://127.0.0.1:8080;
