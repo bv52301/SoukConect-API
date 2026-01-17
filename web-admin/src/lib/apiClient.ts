@@ -1,12 +1,31 @@
+import { getStoredAccessToken } from './auth';
+
 const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getStoredAccessToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> || {}),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${base}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
     ...init,
+    headers,
   });
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
+    // Clear invalid tokens on 401, but don't redirect (allow public browsing)
+    if (res.status === 401) {
+      localStorage.removeItem('souk_access_token');
+      localStorage.removeItem('souk_refresh_token');
+      localStorage.removeItem('souk_user');
+    }
     throw new Error(`HTTP ${res.status}: ${text}`);
   }
   // Some DELETE endpoints return empty body

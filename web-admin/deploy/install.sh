@@ -40,7 +40,13 @@ API_HOST_NOSCHEME="$API_HOST"
 API_HOST_NOSCHEME="${API_HOST_NOSCHEME#http://}"
 API_HOST_NOSCHEME="${API_HOST_NOSCHEME#https://}"
 API_HOST_NOSCHEME="${API_HOST_NOSCHEME%/}"
-sed -i "s|http://HOST:PORT|http://$API_HOST_NOSCHEME:$API_PORT|g" "$API_CONF_FILE"
+# Replace HOST:PORT pattern or update existing api_origin line
+if grep -q 'http://HOST:PORT' "$API_CONF_FILE"; then
+  sed -i "s|http://HOST:PORT|http://$API_HOST_NOSCHEME:$API_PORT|g" "$API_CONF_FILE"
+else
+  # Update existing api_origin to use new host:port
+  sed -i "s|set \$api_origin http://[^;]*;|set \$api_origin http://$API_HOST_NOSCHEME:$API_PORT;|g" "$API_CONF_FILE"
+fi
 # Ensure per-service defaults exist even if the file predates multi-origins
 grep -q '\$vendors_origin'   "$API_CONF_FILE" || echo 'set $vendors_origin   $api_origin;' >> "$API_CONF_FILE"
 grep -q '\$products_origin'  "$API_CONF_FILE" || echo 'set $products_origin  $api_origin;' >> "$API_CONF_FILE"

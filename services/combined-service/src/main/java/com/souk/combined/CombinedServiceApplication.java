@@ -5,9 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-
-
 @SpringBootApplication(scanBasePackages = {
+        "com.souk.combined",
         "com.souk.product",
         "com.souk.vendor",
         "com.souk.cuisine",

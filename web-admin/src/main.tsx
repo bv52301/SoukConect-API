@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material';
+import { AuthProvider } from './lib/auth';
 import App from './App';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import VendorsList from './pages/vendors/VendorsList';
 import VendorForm from './pages/vendors/VendorForm';
 import ProductsList from './pages/products/ProductsList';
@@ -54,6 +57,14 @@ const theme = createTheme({
 
 const router = createBrowserRouter([
   {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/register',
+    element: <Register />,
+  },
+  {
     path: '/',
     element: <App />,
     children: [
@@ -74,7 +85,6 @@ const router = createBrowserRouter([
       { path: 'cuisines/new', element: <CuisineForm mode="create" /> },
       { path: 'cuisines/:id', element: <CuisineForm mode="edit" /> },
       { path: 'cuisines/:id/view', element: <CuisineForm mode="view" /> },
-      { path: 'cuisines/:id/view', element: <CuisineForm mode="view" /> },
     ],
   },
 ]);
@@ -83,7 +93,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <QueryClientProvider client={qc}>
-        <RouterProvider router={router} />
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </React.StrictMode>

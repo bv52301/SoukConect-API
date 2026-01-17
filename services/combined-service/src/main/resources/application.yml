@@ -1,3 +1,13 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-minimum-32-chars}
+    issuer: ${JWT_ISSUER:soukconect}
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:*}
+
 spring:
   datasource:
     url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
