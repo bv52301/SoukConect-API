@@ -33,6 +33,12 @@ export default function Register() {
   // Customer fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  // Customer address fields
+  const [street, setStreet] = useState('');
+  const [unit, setUnit] = useState('');
+  const [city, setCity] = useState('');
+  const [postal, setPostal] = useState('');
+  const [country, setCountry] = useState('');
 
   // Vendor fields
   const [businessName, setBusinessName] = useState('');
@@ -91,6 +97,12 @@ export default function Register() {
       if (role === 'CUSTOMER') {
         payload.firstName = firstName;
         payload.lastName = lastName;
+        // Customer address
+        payload.street = street || undefined;
+        payload.unit = unit || undefined;
+        payload.city = city || undefined;
+        payload.postal = postal || undefined;
+        payload.country = country || undefined;
       } else if (role === 'VENDOR') {
         payload.businessName = businessName;
         payload.businessDescription = businessDescription || undefined;
@@ -140,7 +152,7 @@ export default function Register() {
         py: 4,
       }}
     >
-      <Card sx={{ width: role === 'VENDOR' ? 500 : 400, maxWidth: '90%' }}>
+      <Card sx={{ width: 500, maxWidth: '90%' }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
             Souk Connect
@@ -180,27 +192,77 @@ export default function Register() {
 
             {/* Customer Fields */}
             {role === 'CUSTOMER' && (
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="First Name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    margin="normal"
+                    required
+                    autoFocus
+                    autoComplete="given-name"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Last Name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    margin="normal"
+                    required
+                    autoComplete="family-name"
+                  />
+                </Box>
+
+                <Divider sx={{ my: 2 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Address (Optional)
+                  </Typography>
+                </Divider>
+
                 <TextField
                   fullWidth
-                  label="First Name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  label="Street Address"
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
                   margin="normal"
-                  required
-                  autoFocus
-                  autoComplete="given-name"
+                  autoComplete="street-address"
                 />
                 <TextField
                   fullWidth
-                  label="Last Name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  label="Unit / Apartment"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
                   margin="normal"
-                  required
-                  autoComplete="family-name"
                 />
-              </Box>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="City"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    margin="normal"
+                    autoComplete="address-level2"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Postal Code"
+                    value={postal}
+                    onChange={(e) => setPostal(e.target.value)}
+                    margin="normal"
+                    autoComplete="postal-code"
+                  />
+                </Box>
+                <TextField
+                  fullWidth
+                  label="Country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  margin="normal"
+                  autoComplete="country-name"
+                />
+              </>
             )}
 
             {/* Vendor Fields */}

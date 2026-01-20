@@ -7,6 +7,7 @@ import com.souk.common.adapters.jpa.repository.VendorRepository;
 import com.souk.common.adapters.redis.keys.AuthKeys;
 import com.souk.common.adapters.redis.config.RedisTTL;
 import com.souk.common.domain.Customer;
+import com.souk.common.domain.CustomerAddress;
 import com.souk.common.domain.User;
 import com.souk.common.domain.UserRole;
 import com.souk.common.domain.Vendor;
@@ -220,6 +221,21 @@ public class AuthenticationService {
         customer.setLastName(request.getLastName().trim());
         customer.setEmail(email);
         customer.setPhone(request.getPhone());
+
+        // Add address if provided
+        if (!isBlank(request.getStreet()) || !isBlank(request.getCity())) {
+            CustomerAddress address = new CustomerAddress();
+            address.setCustomer(customer);
+            address.setStreet(request.getStreet());
+            address.setUnit(request.getUnit());
+            address.setCity(request.getCity());
+            address.setPostal(request.getPostal());
+            address.setCountry(request.getCountry());
+            address.setType(CustomerAddress.AddressType.HOME);
+            address.setIsDefault(true);
+            customer.getAddresses().add(address);
+        }
+
         customerRepository.save(customer);
         log.info("Customer profile created for user: {}", user.getUserId());
     }

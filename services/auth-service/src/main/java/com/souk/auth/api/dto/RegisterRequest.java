@@ -28,6 +28,13 @@ public class RegisterRequest {
     private String firstName;
     private String lastName;
 
+    // Customer address fields (optional)
+    private String street;
+    private String unit;
+    private String city;
+    private String postal;
+    private String country;
+
     // Vendor fields (required when role=VENDOR)
     private String businessName;
     private String businessDescription;
@@ -59,6 +66,22 @@ public class RegisterRequest {
 
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
+
+    // Customer address getters and setters
+    public String getStreet() { return street; }
+    public void setStreet(String street) { this.street = street; }
+
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
+
+    public String getPostal() { return postal; }
+    public void setPostal(String postal) { this.postal = postal; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
 
     // Vendor getters and setters
     public String getBusinessName() { return businessName; }

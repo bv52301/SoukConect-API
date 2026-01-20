@@ -103,7 +103,7 @@ TS="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="${DIR}/logs/${project.artifactId}.${TS}.log"
 nohup java ${JAVA_OPTS} -Dserver.port="${PORT}" -Dserver.address=0.0.0.0 -jar "${JAR}" >"${LOG_FILE}" 2>&1 &
 echo $! > "${DIR}/app.pid"
-echo "Started ${project.artifactId} on port ${PORT}. Logs: ${LOG_FILE} (PID $(cat \"${DIR}/app.pid\"))"
+echo "Started ${project.artifactId} on port ${PORT}. Logs: ${LOG_FILE} (PID $(cat ${DIR}/app.pid))"
 ]]></echo>
                                 <chmod file="${project.build.directory}/deploy/start-${project.artifactId}.sh" perm="755" failonerror="false"/>
                                 <echo file="${project.build.directory}/deploy/start-${project.artifactId}.bat"><![CDATA[
