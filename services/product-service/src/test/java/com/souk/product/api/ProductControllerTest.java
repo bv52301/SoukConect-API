@@ -8,7 +8,6 @@ import com.souk.common.domain.ProductMedia;
 import com.souk.common.port.DataAccessPort;
 import com.souk.common.port.ProductQueryPort;
 import com.souk.product.api.dto.ProductCreateRequest;
-import com.souk.product.api.dto.ProductUpdateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,8 +22,6 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -92,8 +89,20 @@ public class ProductControllerTest {
 
     @Test
     void create_ShouldReturnCreated() throws Exception {
+        // ProductCreateRequest(name, sku, price, vendorId, available, description,
+        // categoryDetails, schedule, useVendorSchedule, locations, media)
         ProductCreateRequest req = new ProductCreateRequest(
-                "Test Product", "Plain Desc", new BigDecimal("10.00"), "SKU123", true, null, null, null, 10L);
+                "Test Product",
+                "SKU123",
+                new BigDecimal("10.00"),
+                10L,
+                true,
+                "Description",
+                null,
+                null,
+                false,
+                null,
+                null);
 
         Product saved = new Product();
         saved.setId(1L);
@@ -116,17 +125,6 @@ public class ProductControllerTest {
 
     @Test
     void update_WhenExists_ShouldReturnUpdated() throws Exception {
-        ProductUpdateReq reqStub = new ProductUpdateReq(); // Helper inner class or simplistic approach
-        // Since ProductUpdateRequest is a record or complex object, let's just use a
-        // string JSON for simplicity/control
-        // or construct properly if it's a record.
-        // ProductUpdateRequest definition is needed.
-        // Assuming: public record ProductUpdateRequest(String name, String description,
-        // BigDecimal price, Boolean available, ...)
-
-        // Let's rely on ObjectMapper to map a fast anonymous object or proper class
-        // But ProductUpdateRequest is likely a Record based on typical usage.
-
         Product existing = new Product();
         existing.setId(1L);
         existing.setVendorId(10L);
@@ -144,7 +142,7 @@ public class ProductControllerTest {
         when(productPort.save(any(Product.class))).thenReturn(saved);
         when(vendorPort.findById(10L)).thenReturn(Optional.of(v));
 
-        // Construct JSON manually to avoid constructor mismatch guessing
+        // Construct JSON manually
         String json = """
                     {
                         "name": "New Name",
@@ -157,12 +155,5 @@ public class ProductControllerTest {
                 .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("New Name"));
-    }
-
-    // Quick helper class to avoid compilation errors if ProductUpdateRequest is
-    // strict
-    static class ProductUpdateReq {
-        public String name = "New Name";
-        public BigDecimal price = BigDecimal.TEN;
     }
 }

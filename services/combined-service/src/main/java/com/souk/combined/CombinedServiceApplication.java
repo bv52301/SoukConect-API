@@ -12,8 +12,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.souk.cuisine",
         "com.souk.common"
 })
-@EnableJpaRepositories(basePackages = "com.souk.common.adapters.jpa.repository")
-@EntityScan(basePackages = "com.souk.common.domain")
 public class CombinedServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(CombinedServiceApplication.class, args);

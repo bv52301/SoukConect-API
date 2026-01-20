@@ -8,11 +8,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication(scanBasePackages = {
-    "com.souk.auth",
-    "com.souk.common.adapters"
+        "com.souk.auth",
+        "com.souk.common.adapters"
 })
-@EntityScan(basePackages = "com.souk.common.domain")
-@EnableJpaRepositories(basePackages = "com.souk.common.adapters.jpa.repository")
 @EnableConfigurationProperties
 @EnableAsync
 public class AuthServiceApplication {

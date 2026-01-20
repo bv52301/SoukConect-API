@@ -32,6 +32,9 @@ public class AuthControllerTest {
     @MockBean
     private AuthenticationService authenticationService;
 
+    @MockBean
+    private com.souk.auth.service.JwtService jwtService;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -40,7 +43,7 @@ public class AuthControllerTest {
         RegisterRequest req = new RegisterRequest();
         req.setEmail("test@example.com");
         req.setPassword("password");
-        req.setRole("CUSTOMER"); // Assuming enum or string is valid
+        req.setRole(com.souk.common.domain.UserRole.Role.CUSTOMER);
 
         User user = new User();
         user.setUserId(1L);

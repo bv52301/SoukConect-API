@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
@@ -31,110 +30,125 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 public class OrderControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockBean
-    private DataAccessPort<Order, Long> orderPort;
+        @MockBean
+        private DataAccessPort<Order, Long> orderPort;
 
-    @MockBean
-    private DataAccessPort<Customer, Long> customerPort;
+        @MockBean
+        private DataAccessPort<Customer, Long> customerPort;
 
-    @MockBean
-    private DataAccessPort<CustomerAddress, Long> addressPort;
+        @MockBean
+        private DataAccessPort<CustomerAddress, Long> addressPort;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    @Test
-    void listAll_ShouldReturnList() throws Exception {
-        Order o = new Order();
-        o.setId(1L);
-        o.setStatus("PENDING");
+        @Test
+        void listAll_ShouldReturnList() throws Exception {
+                Order o = new Order();
+                o.setId(1L);
+                o.setStatus(Order.OrderStatus.PENDING);
 
-        when(orderPort.findAll()).thenReturn(Arrays.asList(o));
+                when(orderPort.findAll()).thenReturn(Arrays.asList(o));
 
-        mockMvc.perform(get("/orders"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("PENDING"));
-    }
+                mockMvc.perform(get("/orders"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].status").value("PENDING"));
+        }
 
-    @Test
-    void getById_WhenExists_ShouldReturnOrder() throws Exception {
-        Order o = new Order();
-        o.setId(1L);
-        o.setStatus("PENDING");
+        @Test
+        void getById_WhenExists_ShouldReturnOrder() throws Exception {
+                Order o = new Order();
+                o.setId(1L);
+                o.setStatus(Order.OrderStatus.PENDING);
 
-        when(orderPort.findById(1L)).thenReturn(Optional.of(o));
+                when(orderPort.findById(1L)).thenReturn(Optional.of(o));
 
-        mockMvc.perform(get("/orders/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PENDING"));
-    }
+                mockMvc.perform(get("/orders/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.status").value("PENDING"));
+        }
 
-    @Test
-    void create_ShouldReturnCreated() throws Exception {
-        // Need to construct a valid OrderCreateRequest
-        // Assuming record structure if it maps to JSON cleanly
-        OrderCreateRequest req = new OrderCreateRequest(
-                1L, 1L, Collections.emptyList(), "CREDIT_CARD", null, null, null, null, null);
+        @Test
+        void create_ShouldReturnCreated() throws Exception {
+                // OrderCreateRequest(customerId, addressId, totalAmount, paymentMethod,
+                // requestedDeliveryDate, deliveryFlexibility, deliverySlotStart,
+                // deliverySlotEnd, notes, items)
+                OrderCreateRequest req = new OrderCreateRequest(
+                                1L,
+                                1L,
+                                BigDecimal.TEN,
+                                Order.PaymentMethod.CARD,
+                                null,
+                                null,
+                                null,
+                                null,
+                                "Notes",
+                                Collections.emptyList());
 
-        Customer c = new Customer();
-        c.setId(1L);
+                Customer c = new Customer();
+                c.setId(1L);
 
-        CustomerAddress addr = new CustomerAddress();
-        addr.setId(1L);
+                CustomerAddress addr = new CustomerAddress();
+                addr.setId(1L);
 
-        Order saved = new Order();
-        saved.setId(100L);
-        saved.setStatus("PENDING");
+                Order saved = new Order();
+                saved.setId(100L);
+                saved.setStatus(Order.OrderStatus.PENDING);
 
-        when(customerPort.findById(1L)).thenReturn(Optional.of(c));
-        when(addressPort.findById(1L)).thenReturn(Optional.of(addr));
-        when(orderPort.save(any(Order.class))).thenReturn(saved);
+                when(customerPort.findById(1L)).thenReturn(Optional.of(c));
+                when(addressPort.findById(1L)).thenReturn(Optional.of(addr));
+                when(orderPort.save(any(Order.class))).thenReturn(saved);
 
-        mockMvc.perform(post("/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("PENDING"));
-    }
+                mockMvc.perform(post("/orders")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(req)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.status").value("PENDING"));
+        }
 
-    @Test
-    void update_WhenExists_ShouldReturnUpdated() throws Exception {
-        Order existing = new Order();
-        existing.setId(1L);
-        existing.setStatus("PENDING");
+        @Test
+        void update_WhenExists_ShouldReturnUpdated() throws Exception {
+                Order existing = new Order();
+                existing.setId(1L);
+                existing.setStatus(Order.OrderStatus.PENDING);
 
-        // OrderUpdateRequest(String status, String paymentMethod, LocalDate
-        // requestedDeliveryDate, String deliveryFlexibility, String deliverySlotStart,
-        // String deliverySlotEnd, String notes)
-        OrderUpdateRequest req = new OrderUpdateRequest(
-                "CONFIRMED", "CASH", null, null, null, null, "Notes");
+                // OrderUpdateRequest(status, paymentMethod, requestedDeliveryDate,
+                // deliveryFlexibility, deliverySlotStart, deliverySlotEnd, notes)
+                OrderUpdateRequest req = new OrderUpdateRequest(
+                                Order.OrderStatus.CONFIRMED,
+                                Order.PaymentMethod.CASH,
+                                null,
+                                null,
+                                null,
+                                null,
+                                "Notes");
 
-        Order saved = new Order();
-        saved.setId(1L);
-        saved.setStatus("CONFIRMED");
+                Order saved = new Order();
+                saved.setId(1L);
+                saved.setStatus(Order.OrderStatus.CONFIRMED);
 
-        when(orderPort.findById(1L)).thenReturn(Optional.of(existing));
-        when(orderPort.save(any(Order.class))).thenReturn(saved);
+                when(orderPort.findById(1L)).thenReturn(Optional.of(existing));
+                when(orderPort.save(any(Order.class))).thenReturn(saved);
 
-        mockMvc.perform(put("/orders/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CONFIRMED"));
-    }
+                mockMvc.perform(put("/orders/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(req)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+        }
 
-    @Test
-    void delete_WhenExists_ShouldReturnNoContent() throws Exception {
-        Order o = new Order();
-        o.setId(1L);
+        @Test
+        void delete_WhenExists_ShouldReturnNoContent() throws Exception {
+                Order o = new Order();
+                o.setId(1L);
 
-        when(orderPort.findById(1L)).thenReturn(Optional.of(o));
-        doNothing().when(orderPort).deleteById(1L);
+                when(orderPort.findById(1L)).thenReturn(Optional.of(o));
+                doNothing().when(orderPort).deleteById(1L);
 
-        mockMvc.perform(delete("/orders/1"))
-                .andExpect(status().isNoContent());
-    }
+                mockMvc.perform(delete("/orders/1"))
+                                .andExpect(status().isNoContent());
+        }
 }

@@ -39,37 +39,93 @@ public class CustomerAddress {
     private LocalDateTime updatedAt;
 
     // --- Getters & Setters ---
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
-    public Customer getCustomer() { return customer; }
-    public void setCustomer(Customer customer) { this.customer = customer; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public AddressType getType() { return type; }
-    public void setType(AddressType type) { this.type = type; }
+    public Customer getCustomer() {
+        return customer;
+    }
 
-    public String getStreet() { return street; }
-    public void setStreet(String street) { this.street = street; }
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
 
-    public String getUnit() { return unit; }
-    public void setUnit(String unit) { this.unit = unit; }
+    public AddressType getType() {
+        return type;
+    }
 
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
+    public void setType(AddressType type) {
+        this.type = type;
+    }
 
-    public String getPostal() { return postal; }
-    public void setPostal(String postal) { this.postal = postal; }
+    public String getStreet() {
+        return street;
+    }
 
-    public String getCountry() { return country; }
-    public void setCountry(String country) { this.country = country; }
+    public void setStreet(String street) {
+        this.street = street;
+    }
 
-    public Boolean getIsDefault() { return isDefault; }
-    public void setIsDefault(Boolean isDefault) { this.isDefault = isDefault; }
+    public String getUnit() {
+        return unit;
+    }
 
-    public String getMetadata() { return metadata; }
-    public void setMetadata(String metadata) { this.metadata = metadata; }
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getPostal() {
+        return postal;
+    }
+
+    public void setPostal(String postal) {
+        this.postal = postal;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public Boolean getIsDefault() {
+        return isDefault;
+    }
+
+    public void setIsDefault(Boolean isDefault) {
+        this.isDefault = isDefault;
+    }
+
+    public String getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(String metadata) {
+        this.metadata = metadata;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
     // Enum for type
     public enum AddressType {

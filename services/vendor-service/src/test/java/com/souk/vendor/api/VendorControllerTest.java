@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
@@ -72,11 +73,25 @@ public class VendorControllerTest {
 
     @Test
     void create_ShouldReturnCreated() throws Exception {
-        // VendorCreateRequest needs to match constructor or setters used by Jackson
-        // Assuming record or POJO.
+        // VendorCreateRequest(name, description, supportedCategories, schedule, image,
+        // address1, address2, state, landmark, pincode, contactName, phoneNumber,
+        // email, latitude, longitude)
         VendorCreateRequest req = new VendorCreateRequest(
-                "New Vendor", "user@example.com", "1234567890", "Desc", "A1", "A2", "State", "City", "LM", "123123",
-                "Contact", null, null, null, null, null);
+                "New Vendor",
+                "Desc",
+                null,
+                null,
+                "image.jpg",
+                "Addr1",
+                "Addr2",
+                "State",
+                "Landmark",
+                "123456",
+                "Contact Name",
+                "1234567890",
+                "test@example.com",
+                BigDecimal.ZERO,
+                BigDecimal.ZERO);
 
         Vendor saved = new Vendor();
         saved.setVendorId(1L);
@@ -93,14 +108,23 @@ public class VendorControllerTest {
 
     @Test
     void update_WhenExists_ShouldReturnUpdated() throws Exception {
-        // Minimal request object for update
-        String json = """
-                    {
-                        "name": "Updated Vendor",
-                        "email": "update@example.com",
-                        "phoneNumber": "9876543210"
-                    }
-                """;
+        // VendorUpdateRequest has same fields
+        VendorUpdateRequest req = new VendorUpdateRequest(
+                "Updated Vendor",
+                "Desc",
+                null,
+                null,
+                "image.jpg",
+                "Addr1",
+                "Addr2",
+                "State",
+                "Landmark",
+                "123456",
+                "Contact Name",
+                "9876543210",
+                "update@example.com",
+                BigDecimal.ZERO,
+                BigDecimal.ZERO);
 
         Vendor existing = new Vendor();
         existing.setVendorId(1L);
@@ -115,7 +139,7 @@ public class VendorControllerTest {
 
         mockMvc.perform(put("/vendors/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json))
+                .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Updated Vendor"));
     }
