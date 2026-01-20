@@ -67,7 +67,6 @@ public record ProductResponse(
         );
     }
 
-    @SuppressWarnings("unchecked")
     private static List<String> extractCategories(Object categoryDetails) {
         if (categoryDetails == null) return null;
         // If stored as array of objects, take first element's Category array

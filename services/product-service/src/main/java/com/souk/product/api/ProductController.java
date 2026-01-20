@@ -1,9 +1,7 @@
 package com.souk.product.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.souk.common.domain.Product;
 import com.souk.common.domain.ProductLocation;
-import com.souk.common.domain.ProductLocationId;
 import com.souk.common.domain.VendorLocation;
 import com.souk.common.domain.ProductMedia;
 import com.souk.common.domain.ProductMedia.ValidationStatus;

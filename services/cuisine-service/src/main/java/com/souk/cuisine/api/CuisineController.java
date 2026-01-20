@@ -14,7 +14,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -27,8 +26,8 @@ public class CuisineController {
     private final CuisineRepository cuisineRepository;
 
     public CuisineController(DataAccessPort<Cuisine, Long> cuisinePort,
-                             DataAccessPort<CuisineImage, Long> cuisineImagePort,
-                             CuisineRepository cuisineRepository) {
+            DataAccessPort<CuisineImage, Long> cuisineImagePort,
+            CuisineRepository cuisineRepository) {
         this.cuisinePort = cuisinePort;
         this.cuisineImagePort = cuisineImagePort;
         this.cuisineRepository = cuisineRepository;
@@ -55,14 +54,12 @@ public class CuisineController {
         // Get distinct categories from database
         List<CategoryWithImage> result = new ArrayList<>();
 
-        cuisineRepository.findDistinctCategories().forEach(cat ->
-            result.add(new CategoryWithImage(cat, categoryImages.getOrDefault(cat.toLowerCase(), "None")))
-        );
+        cuisineRepository.findDistinctCategories().forEach(
+                cat -> result.add(new CategoryWithImage(cat, categoryImages.getOrDefault(cat.toLowerCase(), "None"))));
 
         // Get distinct subcategories from database
-        cuisineRepository.findDistinctSubcategories().forEach(subcat ->
-            result.add(new CategoryWithImage(subcat, subcategoryImages.getOrDefault(subcat.toLowerCase(), "None")))
-        );
+        cuisineRepository.findDistinctSubcategories().forEach(subcat -> result
+                .add(new CategoryWithImage(subcat, subcategoryImages.getOrDefault(subcat.toLowerCase(), "None"))));
 
         return result;
     }
@@ -97,7 +94,10 @@ public class CuisineController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable @Min(1) Long id) {
         return cuisinePort.findById(id)
-                .map(c -> { cuisinePort.deleteById(id); return ResponseEntity.noContent().<Void>build(); })
+                .map(c -> {
+                    cuisinePort.deleteById(id);
+                    return ResponseEntity.noContent().<Void>build();
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -125,7 +125,8 @@ public class CuisineController {
                 case SUBCATEGORY -> c.getSubcategory() != null && c.getSubcategory().equalsIgnoreCase(req.getName());
             };
         });
-        if (!exists) return ResponseEntity.badRequest().build();
+        if (!exists)
+            return ResponseEntity.badRequest().build();
 
         CuisineImage saved = cuisineImagePort.save(req);
         return ResponseEntity.created(URI.create("/cuisines/images/" + saved.getId())).body(saved);
@@ -134,23 +135,29 @@ public class CuisineController {
     @DeleteMapping("/images/{id}")
     public ResponseEntity<Void> deleteImage(@PathVariable @Min(1) Long id) {
         return cuisineImagePort.findById(id)
-                .map(img -> { cuisineImagePort.deleteById(id); return ResponseEntity.noContent().<Void>build(); })
+                .map(img -> {
+                    cuisineImagePort.deleteById(id);
+                    return ResponseEntity.noContent().<Void>build();
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/images/{id}")
     public ResponseEntity<CuisineImage> updateImage(@PathVariable @Min(1) Long id,
-                                                    @RequestBody @Valid CuisineImage req) {
+            @RequestBody @Valid CuisineImage req) {
         return cuisineImagePort.findById(id)
                 .map(existing -> {
                     boolean exists = cuisinePort.findAll().stream().anyMatch(c -> {
                         return switch (req.getType()) {
-                            case CUISINE -> c.getCuisineName() != null && c.getCuisineName().equalsIgnoreCase(req.getName());
+                            case CUISINE ->
+                                c.getCuisineName() != null && c.getCuisineName().equalsIgnoreCase(req.getName());
                             case CATEGORY -> c.getCategory() != null && c.getCategory().equalsIgnoreCase(req.getName());
-                            case SUBCATEGORY -> c.getSubcategory() != null && c.getSubcategory().equalsIgnoreCase(req.getName());
+                            case SUBCATEGORY ->
+                                c.getSubcategory() != null && c.getSubcategory().equalsIgnoreCase(req.getName());
                         };
                     });
-                    if (!exists) return ResponseEntity.badRequest().<CuisineImage>build();
+                    if (!exists)
+                        return ResponseEntity.badRequest().<CuisineImage>build();
                     existing.setType(req.getType());
                     existing.setName(req.getName());
                     existing.setImageUrl(req.getImageUrl());
@@ -161,5 +168,6 @@ public class CuisineController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    public record CategoryWithImage(String category, String imageUrl) {}
+    public record CategoryWithImage(String category, String imageUrl) {
+    }
 }

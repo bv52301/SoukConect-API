@@ -3,7 +3,6 @@ package com.souk.product.api.dto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Product;
-import com.souk.common.domain.ProductLocation;
 import com.souk.common.domain.ProductMedia;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

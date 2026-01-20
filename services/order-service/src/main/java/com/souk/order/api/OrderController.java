@@ -1,7 +1,6 @@
 package com.souk.order.api;
 
 import com.souk.common.domain.Order;
-import com.souk.common.domain.OrderItem;
 import com.souk.common.domain.Customer;
 import com.souk.common.domain.CustomerAddress;
 import com.souk.common.port.DataAccessPort;
