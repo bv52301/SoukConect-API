@@ -55,6 +55,7 @@ Create the systemd unit file to define how the service runs.
 ## 3. SELinux Configuration
 
 Configure SELinux to allow `systemd` to execute the scripts in the `soukapi` home directory.
+IMPORTANT Every time you deploy a new version of the service, you need to run the following commands:
 
     **Run as root:**
     # 1. Add context to policy
@@ -79,10 +80,15 @@ Configure SELinux to allow `systemd` to execute the scripts in the `soukapi` hom
 
 ## 5. Deployment Workflow
 
-1.  **Stop the service:**
-    sudo systemctl stop auth-service
-2.  **Upload new artifacts** 
+1.  **Upload new artifacts** 
     (JAR and scripts) to `/home/soukapi/auth-service-1.0.0-SNAPSHOT/`.
-3.  **Start the service:**
+2.  **Start the service:**
     sudo systemctl start auth-service
+3.  **Stop the service:**
+    sudo systemctl stop auth-service
+4.  **restart the service:**
+    sudo systemctl restart auth-service
+5.  **Status of  the service:**
+    sudo systemctl status auth-service
+
 **Important:** The service MUST be managed only via `systemctl` because it depends on the secure environment variables loaded by the systemd unit. Running the script directly as user `soukapi` will fail because it cannot read the environment file.
