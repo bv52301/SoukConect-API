@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
+
 public class RegisterRequest {
 
     @NotBlank(message = "Email is required")
@@ -22,8 +24,21 @@ public class RegisterRequest {
     @NotNull(message = "Role is required")
     private Role role;
 
+    // Customer fields (required when role=CUSTOMER)
     private String firstName;
     private String lastName;
+
+    // Vendor fields (required when role=VENDOR)
+    private String businessName;
+    private String businessDescription;
+    private String contactName;
+    private String address1;
+    private String address2;
+    private String state;
+    private String landmark;
+    private String pincode;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
 
     public RegisterRequest() {}
 
@@ -44,4 +59,35 @@ public class RegisterRequest {
 
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
+
+    // Vendor getters and setters
+    public String getBusinessName() { return businessName; }
+    public void setBusinessName(String businessName) { this.businessName = businessName; }
+
+    public String getBusinessDescription() { return businessDescription; }
+    public void setBusinessDescription(String businessDescription) { this.businessDescription = businessDescription; }
+
+    public String getContactName() { return contactName; }
+    public void setContactName(String contactName) { this.contactName = contactName; }
+
+    public String getAddress1() { return address1; }
+    public void setAddress1(String address1) { this.address1 = address1; }
+
+    public String getAddress2() { return address2; }
+    public void setAddress2(String address2) { this.address2 = address2; }
+
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+
+    public String getLandmark() { return landmark; }
+    public void setLandmark(String landmark) { this.landmark = landmark; }
+
+    public String getPincode() { return pincode; }
+    public void setPincode(String pincode) { this.pincode = pincode; }
+
+    public BigDecimal getLatitude() { return latitude; }
+    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
+
+    public BigDecimal getLongitude() { return longitude; }
+    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
 }

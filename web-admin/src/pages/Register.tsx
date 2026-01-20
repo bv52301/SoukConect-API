@@ -12,6 +12,7 @@ import {
   Link,
   ToggleButton,
   ToggleButtonGroup,
+  Divider,
 } from '@mui/material';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
@@ -19,8 +20,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 export default function Register() {
   const navigate = useNavigate();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  // Common fields
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +29,22 @@ export default function Register() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Customer fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
+  // Vendor fields
+  const [businessName, setBusinessName] = useState('');
+  const [businessDescription, setBusinessDescription] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [address1, setAddress1] = useState('');
+  const [address2, setAddress2] = useState('');
+  const [state, setState] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,13 +61,53 @@ export default function Register() {
       return;
     }
 
+    // Role-specific validation
+    if (role === 'CUSTOMER') {
+      if (!firstName.trim()) {
+        setError('First name is required');
+        return;
+      }
+      if (!lastName.trim()) {
+        setError('Last name is required');
+        return;
+      }
+    } else if (role === 'VENDOR') {
+      if (!businessName.trim()) {
+        setError('Business name is required');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
+      const payload: Record<string, unknown> = {
+        email,
+        password,
+        role,
+        phone: phone || undefined,
+      };
+
+      if (role === 'CUSTOMER') {
+        payload.firstName = firstName;
+        payload.lastName = lastName;
+      } else if (role === 'VENDOR') {
+        payload.businessName = businessName;
+        payload.businessDescription = businessDescription || undefined;
+        payload.contactName = contactName || undefined;
+        payload.address1 = address1 || undefined;
+        payload.address2 = address2 || undefined;
+        payload.state = state || undefined;
+        payload.landmark = landmark || undefined;
+        payload.pincode = pincode || undefined;
+        if (latitude) payload.latitude = parseFloat(latitude);
+        if (longitude) payload.longitude = parseFloat(longitude);
+      }
+
       const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role, firstName, lastName, phone }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -81,9 +137,10 @@ export default function Register() {
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: '#f5f5f5',
+        py: 4,
       }}
     >
-      <Card sx={{ width: 400, maxWidth: '90%' }}>
+      <Card sx={{ width: role === 'VENDOR' ? 500 : 400, maxWidth: '90%' }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
             Souk Connect
@@ -120,27 +177,133 @@ export default function Register() {
                 <ToggleButton value="VENDOR">Vendor</ToggleButton>
               </ToggleButtonGroup>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                fullWidth
-                label="First Name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                margin="normal"
-                required
-                autoFocus
-                autoComplete="given-name"
-              />
-              <TextField
-                fullWidth
-                label="Last Name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                margin="normal"
-                required
-                autoComplete="family-name"
-              />
-            </Box>
+
+            {/* Customer Fields */}
+            {role === 'CUSTOMER' && (
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  margin="normal"
+                  required
+                  autoFocus
+                  autoComplete="given-name"
+                />
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  margin="normal"
+                  required
+                  autoComplete="family-name"
+                />
+              </Box>
+            )}
+
+            {/* Vendor Fields */}
+            {role === 'VENDOR' && (
+              <>
+                <TextField
+                  fullWidth
+                  label="Business Name"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  margin="normal"
+                  required
+                  autoFocus
+                  autoComplete="organization"
+                />
+                <TextField
+                  fullWidth
+                  label="Business Description"
+                  value={businessDescription}
+                  onChange={(e) => setBusinessDescription(e.target.value)}
+                  margin="normal"
+                  multiline
+                  rows={2}
+                />
+                <TextField
+                  fullWidth
+                  label="Contact Name"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  margin="normal"
+                  autoComplete="name"
+                />
+
+                <Divider sx={{ my: 2 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Business Address
+                  </Typography>
+                </Divider>
+
+                <TextField
+                  fullWidth
+                  label="Address Line 1"
+                  value={address1}
+                  onChange={(e) => setAddress1(e.target.value)}
+                  margin="normal"
+                  autoComplete="address-line1"
+                />
+                <TextField
+                  fullWidth
+                  label="Address Line 2"
+                  value={address2}
+                  onChange={(e) => setAddress2(e.target.value)}
+                  margin="normal"
+                  autoComplete="address-line2"
+                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="State"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    margin="normal"
+                    autoComplete="address-level1"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Pincode"
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    margin="normal"
+                    autoComplete="postal-code"
+                  />
+                </Box>
+                <TextField
+                  fullWidth
+                  label="Landmark"
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
+                  margin="normal"
+                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Latitude"
+                    type="number"
+                    value={latitude}
+                    onChange={(e) => setLatitude(e.target.value)}
+                    margin="normal"
+                    inputProps={{ step: 'any' }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Longitude"
+                    type="number"
+                    value={longitude}
+                    onChange={(e) => setLongitude(e.target.value)}
+                    margin="normal"
+                    inputProps={{ step: 'any' }}
+                  />
+                </Box>
+              </>
+            )}
+
             <TextField
               fullWidth
               label="Email"

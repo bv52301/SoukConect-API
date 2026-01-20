@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Defaults can be overridden via environment variables
-API_HOST="${API_HOST:-ec2-13-250-197-155.ap-southeast-1.compute.amazonaws.com}"
-API_PORT="${API_PORT:-8080}"
+API_HOST="${API_HOST:-127.0.0.1}"
+API_PORT="${API_PORT:-8082}"
 # Optional per-service overrides
 VENDORS_HOST="${VENDORS_HOST:-}"
 VENDORS_PORT="${VENDORS_PORT:-}"
@@ -13,6 +13,8 @@ CUSTOMERS_HOST="${CUSTOMERS_HOST:-}"
 CUSTOMERS_PORT="${CUSTOMERS_PORT:-}"
 CUISINES_HOST="${CUISINES_HOST:-}"
 CUISINES_PORT="${CUISINES_PORT:-}"
+AUTH_HOST="${AUTH_HOST:-127.0.0.1}"
+AUTH_PORT="${AUTH_PORT:-8080}"
 UI_ROOT="${UI_ROOT:-/var/www}"
 SITE_CONF_PATH="${SITE_CONF_PATH:-/etc/nginx/conf.d/souk-admin.conf}"
 API_CONF_DIR="${API_CONF_DIR:-/etc/souk-admin}"
@@ -52,6 +54,7 @@ grep -q '\$vendors_origin'   "$API_CONF_FILE" || echo 'set $vendors_origin   $ap
 grep -q '\$products_origin'  "$API_CONF_FILE" || echo 'set $products_origin  $api_origin;' >> "$API_CONF_FILE"
 grep -q '\$customers_origin' "$API_CONF_FILE" || echo 'set $customers_origin $api_origin;' >> "$API_CONF_FILE"
 grep -q '\$cuisines_origin'  "$API_CONF_FILE" || echo 'set $cuisines_origin  $api_origin;' >> "$API_CONF_FILE"
+grep -q '\$auth_origin'      "$API_CONF_FILE" || echo "set \$auth_origin      http://$AUTH_HOST:$AUTH_PORT;" >> "$API_CONF_FILE"
 # If per-service envs are provided, append overrides so they take precedence
 if [[ -n "$VENDORS_HOST" ]]; then
   host="$VENDORS_HOST"; host="${host#http://}"; host="${host#https://}"; host="${host%/}"
@@ -69,6 +72,9 @@ if [[ -n "$CUISINES_HOST" ]]; then
   host="$CUISINES_HOST"; host="${host#http://}"; host="${host#https://}"; host="${host%/}"
   echo "set \$cuisines_origin http://$host:${CUISINES_PORT:-$API_PORT};" >> "$API_CONF_FILE"
 fi
+# Auth service override (always update to ensure correct host:port)
+host="$AUTH_HOST"; host="${host#http://}"; host="${host#https://}"; host="${host%/}"
+sed -i "s|set \$auth_origin http://[^;]*;|set \$auth_origin http://$host:$AUTH_PORT;|g" "$API_CONF_FILE"
 echo "Configured API origin in $API_CONF_FILE"
 
 # 2) Place nginx site config
@@ -153,14 +159,16 @@ resolve_origin() {
 vendors_o="$(resolve_origin vendors_origin)";  [[ -z "$vendors_o"  ]] && vendors_o="$(resolve_origin api_origin)"
 products_o="$(resolve_origin products_origin)"; [[ -z "$products_o" ]] && products_o="$(resolve_origin api_origin)"
 customers_o="$(resolve_origin customers_origin)";[[ -z "$customers_o" ]]&& customers_o="$(resolve_origin api_origin)"
+auth_o="$(resolve_origin auth_origin)"
 default_o="$(resolve_origin api_origin)"
 
 echo "Deployment complete. UI and endpoints:"
-echo "  UI:           ${base_url}/"
-echo "  /vendors  ->  ${vendors_o}"
-echo "  /products ->  ${products_o}"
-echo "  /customers->  ${customers_o}"
-echo "  other paths -> ${default_o} (via catch-all)"
+echo "  UI:              ${base_url}/"
+echo "  /vendors     ->  ${vendors_o}"
+echo "  /products    ->  ${products_o}"
+echo "  /customers   ->  ${customers_o}"
+echo "  /api/v1/auth ->  ${auth_o}"
+echo "  other paths  ->  ${default_o} (via catch-all)"
 
 # List any custom route files if present
 if ls "$ROUTES_DIR"/*.conf >/dev/null 2>&1; then

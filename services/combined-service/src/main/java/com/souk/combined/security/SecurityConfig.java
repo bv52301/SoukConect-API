@@ -14,7 +14,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -25,8 +24,8 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                         JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-                         CorsProperties corsProperties) {
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+            CorsProperties corsProperties) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
         this.corsProperties = corsProperties;
@@ -35,69 +34,72 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // =====================================================
-                // PUBLIC ENDPOINTS - No authentication required
-                // =====================================================
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // =====================================================
+                        // PUBLIC ENDPOINTS - No authentication required
+                        // =====================================================
 
-                // Allow CORS preflight requests
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Allow CORS preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // GET requests for browsing (read-only access)
-                .requestMatchers(HttpMethod.GET, "/vendors/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/cuisines/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/customers/**").permitAll()
+                        // GET requests for browsing (read-only access)
+                        .requestMatchers(HttpMethod.GET,
+                                "/vendors/**",
+                                "/products/**",
+                                "/cuisines/categories", // Explicitly define before wildcard if order matters, though
+                                                        // grouped it's fine
+                                "/cuisines/**",
+                                "/customers/**")
+                        .permitAll()
 
-                // Swagger/OpenAPI documentation
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // Swagger/OpenAPI documentation
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
-                // Health check endpoint
-                .requestMatchers("/actuator/health").permitAll()
+                        // Health check endpoint
+                        .requestMatchers("/actuator/health").permitAll()
 
-                // Media/upload endpoints (read-only)
-                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/preview/**").permitAll()
+                        // Media/upload endpoints (read-only)
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/preview/**").permitAll()
 
-                // =====================================================
-                // PROTECTED ENDPOINTS - Authentication required
-                // =====================================================
+                        // =====================================================
+                        // PROTECTED ENDPOINTS - Authentication required
+                        // =====================================================
 
-                // All write operations (POST, PUT, DELETE) require authentication
-                .requestMatchers(HttpMethod.POST, "/vendors/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/vendors/**").authenticated()
-                .requestMatchers(HttpMethod.PATCH, "/vendors/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/vendors/**").authenticated()
+                        // All write operations (POST, PUT, DELETE) require authentication
+                        .requestMatchers(HttpMethod.POST, "/vendors/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/vendors/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/vendors/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/vendors/**").authenticated()
 
-                .requestMatchers(HttpMethod.POST, "/products/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/products/**").authenticated()
-                .requestMatchers(HttpMethod.PATCH, "/products/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/products/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/products/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/products/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/products/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/products/**").authenticated()
 
-                .requestMatchers(HttpMethod.POST, "/cuisines/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/cuisines/**").authenticated()
-                .requestMatchers(HttpMethod.PATCH, "/cuisines/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/cuisines/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/cuisines/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/cuisines/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/cuisines/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/cuisines/**").authenticated()
 
-                .requestMatchers(HttpMethod.POST, "/customers/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/customers/**").authenticated()
-                .requestMatchers(HttpMethod.PATCH, "/customers/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/customers/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/customers/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/customers/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/customers/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/customers/**").authenticated()
 
-                // Upload operations require authentication
-                .requestMatchers(HttpMethod.POST, "/uploads/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/preview/**").authenticated()
+                        // Upload operations require authentication
+                        .requestMatchers(HttpMethod.POST, "/uploads/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/preview/**").authenticated()
 
-                // =====================================================
-                // DEFAULT - All other endpoints require authentication
-                // =====================================================
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        // =====================================================
+                        // DEFAULT - All other endpoints require authentication
+                        // =====================================================
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -110,7 +112,8 @@ public class SecurityConfig {
         boolean hasWildcard = patterns.stream().anyMatch(p -> "*".equals(p));
 
         if (hasWildcard) {
-            // Use setAllowedOrigins with "*" and disable credentials (CORS spec requirement)
+            // Use setAllowedOrigins with "*" and disable credentials (CORS spec
+            // requirement)
             configuration.setAllowedOrigins(java.util.List.of("*"));
             configuration.setAllowCredentials(false);
         } else {

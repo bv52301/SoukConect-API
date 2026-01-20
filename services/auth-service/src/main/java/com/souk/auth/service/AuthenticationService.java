@@ -1,11 +1,15 @@
 package com.souk.auth.service;
 
 import com.souk.auth.api.dto.*;
+import com.souk.common.adapters.jpa.repository.CustomerRepository;
 import com.souk.common.adapters.jpa.repository.UserRepository;
+import com.souk.common.adapters.jpa.repository.VendorRepository;
 import com.souk.common.adapters.redis.keys.AuthKeys;
 import com.souk.common.adapters.redis.config.RedisTTL;
+import com.souk.common.domain.Customer;
 import com.souk.common.domain.User;
 import com.souk.common.domain.UserRole;
+import com.souk.common.domain.Vendor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,6 +28,8 @@ public class AuthenticationService {
     private static final int MAX_FAILED_ATTEMPTS = 5;
 
     private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
+    private final VendorRepository vendorRepository;
     private final JwtService jwtService;
     private final PasswordService passwordService;
     private final MfaService mfaService;
@@ -32,6 +38,8 @@ public class AuthenticationService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     public AuthenticationService(UserRepository userRepository,
+                                 CustomerRepository customerRepository,
+                                 VendorRepository vendorRepository,
                                  JwtService jwtService,
                                  PasswordService passwordService,
                                  MfaService mfaService,
@@ -39,6 +47,8 @@ public class AuthenticationService {
                                  EmailService emailService,
                                  RedisTemplate<String, Object> redisTemplate) {
         this.userRepository = userRepository;
+        this.customerRepository = customerRepository;
+        this.vendorRepository = vendorRepository;
         this.jwtService = jwtService;
         this.passwordService = passwordService;
         this.mfaService = mfaService;
@@ -81,6 +91,11 @@ public class AuthenticationService {
         if (!passwordService.verifyPassword(request.getPassword(), user.getPasswordHash())) {
             handleFailedLogin(user, email);
             throw new AuthenticationException("Invalid email or password");
+        }
+
+        // Check if email is verified
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new AuthenticationException("Please verify your email before logging in. Check your inbox for the verification link.");
         }
 
         // Password verified - clear failed attempts
@@ -138,6 +153,9 @@ public class AuthenticationService {
             throw new AuthenticationException("Cannot self-register as Admin or Support");
         }
 
+        // Validate role-specific required fields
+        validateRoleSpecificFields(request);
+
         // Create user
         User user = new User();
         user.setEmail(email);
@@ -157,6 +175,13 @@ public class AuthenticationService {
 
         user = userRepository.save(user);
 
+        // Create role-specific profile
+        if (request.getRole() == UserRole.Role.CUSTOMER) {
+            createCustomerProfile(user, request, email);
+        } else if (request.getRole() == UserRole.Role.VENDOR) {
+            createVendorProfile(user, request, email);
+        }
+
         // Store verification token in Redis for quick lookup
         String redisKey = AuthKeys.emailVerification(verificationToken);
         redisTemplate.opsForValue().set(redisKey, user.getUserId(),
@@ -167,6 +192,59 @@ public class AuthenticationService {
 
         log.info("User registered: {} with role {}", user.getUserId(), request.getRole());
         return user;
+    }
+
+    private void validateRoleSpecificFields(RegisterRequest request) {
+        if (request.getRole() == UserRole.Role.CUSTOMER) {
+            if (isBlank(request.getFirstName())) {
+                throw new AuthenticationException("First name is required for customer registration");
+            }
+            if (isBlank(request.getLastName())) {
+                throw new AuthenticationException("Last name is required for customer registration");
+            }
+        } else if (request.getRole() == UserRole.Role.VENDOR) {
+            if (isBlank(request.getBusinessName())) {
+                throw new AuthenticationException("Business name is required for vendor registration");
+            }
+        }
+    }
+
+    private boolean isBlank(String str) {
+        return str == null || str.trim().isEmpty();
+    }
+
+    private void createCustomerProfile(User user, RegisterRequest request, String email) {
+        Customer customer = new Customer();
+        customer.setUserId(user.getUserId());
+        customer.setFirstName(request.getFirstName().trim());
+        customer.setLastName(request.getLastName().trim());
+        customer.setEmail(email);
+        customer.setPhone(request.getPhone());
+        customerRepository.save(customer);
+        log.info("Customer profile created for user: {}", user.getUserId());
+    }
+
+    private void createVendorProfile(User user, RegisterRequest request, String email) {
+        Vendor vendor = new Vendor();
+        vendor.setUserId(user.getUserId());
+        vendor.setName(request.getBusinessName().trim());
+        vendor.setDescription(request.getBusinessDescription());
+        vendor.setContactName(request.getContactName());
+        vendor.setEmail(email);
+        vendor.setPhoneNumber(request.getPhone());
+        vendor.setAddress1(request.getAddress1());
+        vendor.setAddress2(request.getAddress2());
+        vendor.setState(request.getState());
+        vendor.setLandmark(request.getLandmark());
+        vendor.setPincode(request.getPincode());
+        if (request.getLatitude() != null) {
+            vendor.setLatitude(request.getLatitude());
+        }
+        if (request.getLongitude() != null) {
+            vendor.setLongitude(request.getLongitude());
+        }
+        vendorRepository.save(vendor);
+        log.info("Vendor profile created for user: {}", user.getUserId());
     }
 
     @Transactional
