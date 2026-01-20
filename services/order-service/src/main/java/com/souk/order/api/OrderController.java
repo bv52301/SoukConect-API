@@ -1,4 +1,4 @@
-package com.souk.order.api.dto;
+package com.souk.order.api;
 
 import com.souk.common.domain.Order;
 import com.souk.common.domain.OrderItem;
@@ -26,8 +26,8 @@ public class OrderController {
     private final DataAccessPort<CustomerAddress, Long> addressPort;
 
     public OrderController(DataAccessPort<Order, Long> orderPort,
-                           DataAccessPort<Customer, Long> customerPort,
-                           DataAccessPort<CustomerAddress, Long> addressPort) {
+            DataAccessPort<Customer, Long> customerPort,
+            DataAccessPort<CustomerAddress, Long> addressPort) {
         this.orderPort = orderPort;
         this.customerPort = customerPort;
         this.addressPort = addressPort;
@@ -54,7 +54,8 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<OrderResponse> create(@Valid @RequestBody OrderCreateRequest req) {
         Optional<Customer> customerOpt = customerPort.findById(req.customerId());
-        if (customerOpt.isEmpty()) return ResponseEntity.badRequest().build();
+        if (customerOpt.isEmpty())
+            return ResponseEntity.badRequest().build();
 
         Order order = req.toDomain(customerOpt.get(), req.addressId() != null
                 ? addressPort.findById(req.addressId()).orElse(null)
@@ -68,7 +69,7 @@ public class OrderController {
     // --- Update order ---
     @PutMapping("/{id}")
     public ResponseEntity<OrderResponse> update(@PathVariable @Min(1) Long id,
-                                                @Valid @RequestBody OrderUpdateRequest req) {
+            @Valid @RequestBody OrderUpdateRequest req) {
         return orderPort.findById(id)
                 .map(existing -> {
                     existing.setStatus(req.status());
