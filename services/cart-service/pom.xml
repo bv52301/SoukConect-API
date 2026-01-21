@@ -6,6 +6,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Inherit from the parent project -->
     <parent>
         <groupId>com.souk</groupId>
         <artifactId>soukconect-api</artifactId>
@@ -13,23 +14,13 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>combined-service</artifactId>
+    <!-- This module's identity -->
+    <artifactId>cart-service</artifactId>
+    <name>cart-service</name>
     <packaging>jar</packaging>
-    <name>combined-service</name>
-
-    <properties>
-        <java.version>17</java.version>
-    </properties>
 
     <dependencies>
-        <!-- ✅ Swagger UI -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.6.0</version>
-        </dependency>
-
-        <!-- ✅ Spring Boot essentials -->
+        <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -39,125 +30,53 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Spring Data JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- ✅ Flyway and MariaDB -->
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
-        <!-- Database drivers (prefer MySQL Connector/J) -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+        <!-- MariaDB JDBC -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- ✅ Spring Security -->
+        <!-- Shared Domain + Adapters -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>com.souk</groupId>
+            <artifactId>common-domain</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
-        <!-- ✅ JWT Support -->
         <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>0.12.6</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>0.12.6</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>0.12.6</version>
-            <scope>runtime</scope>
+            <groupId>com.souk</groupId>
+            <artifactId>common-adapters</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
-        <!-- ✅ Test Dependencies -->
+        <!-- Swagger / OpenAPI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.6.0</version>
+        </dependency>
+
+        <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- ✅ Internal Souk Services -->
-        <dependency>
-            <groupId>com.souk</groupId>
-            <artifactId>product-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.souk</groupId>
-            <artifactId>vendor-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.souk</groupId>
-            <artifactId>cuisine-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
-        <finalName>combined-service</finalName>
-
         <plugins>
-
-            <!-- ✅ Step 1: Unpack dependent service JARs -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.6.1</version>
-                <executions>
-                    <execution>
-                        <id>unpack-services</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>unpack-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <includeGroupIds>com.souk</includeGroupIds>
-                            <includeArtifactIds>product-service,vendor-service,cuisine-service,cart-service</includeArtifactIds>
-                            <includeTypes>jar</includeTypes>
-                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- ✅ Step 2: Package as Spring Boot app -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.5.5</version>
-                <configuration>
-                    <!-- 🔥 Explicitly set main entry point -->
-                    <mainClass>com.souk.combined.CombinedServiceApplication</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
-
-            <!-- Generate deploy dir + scripts; copy jar; zip deploy -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -172,52 +91,52 @@
                         <configuration>
                             <target>
                                 <mkdir dir="${project.build.directory}/deploy/logs"/>
-                                <echo file="${project.build.directory}/deploy/start-combined-service.sh"><![CDATA[
+                                <echo file="${project.build.directory}/deploy/start-${project.artifactId}.sh"><![CDATA[
 #!/usr/bin/env bash
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-JAR="${DIR}/combined-service.jar"
-PORT="${PORT:-8082}"
+JAR="${DIR}/${project.build.finalName}.jar"
+PORT="${PORT:-8080}"
 JAVA_OPTS="${JAVA_OPTS:-}"
 mkdir -p "${DIR}/logs"
 TS="$(date +%Y%m%d-%H%M%S)"
-LOG_FILE="${DIR}/logs/combined-service.${TS}.log"
+LOG_FILE="${DIR}/logs/${project.artifactId}.${TS}.log"
 nohup java ${JAVA_OPTS} -Dserver.port="${PORT}" -Dserver.address=0.0.0.0 -jar "${JAR}" >"${LOG_FILE}" 2>&1 &
 echo $! > "${DIR}/app.pid"
-echo "Started combined-service on port ${PORT}. Logs: ${LOG_FILE} (PID $(cat ${DIR}/app.pid))"
+echo "Started ${project.artifactId} on port ${PORT}. Logs: ${LOG_FILE} (PID $(cat ${DIR}/app.pid))"
 ]]></echo>
-                                <chmod file="${project.build.directory}/deploy/start-combined-service.sh" perm="755" failonerror="false"/>
-                                <echo file="${project.build.directory}/deploy/start-combined-service.bat"><![CDATA[
+                                <chmod file="${project.build.directory}/deploy/start-${project.artifactId}.sh" perm="755" failonerror="false"/>
+                                <echo file="${project.build.directory}/deploy/start-${project.artifactId}.bat"><![CDATA[
 @echo off
 setlocal
 set "DIR=%~dp0"
-set "JAR=%DIR%combined-service.jar"
-if "%PORT%"=="" set PORT=8082
+set "JAR=%DIR%${project.build.finalName}.jar"
+if "%PORT%"=="" set PORT=8080
 set "JAVA_OPTS=%JAVA_OPTS%"
 set "LOGDIR=%DIR%logs"
 if not exist "%LOGDIR%" mkdir "%LOGDIR%"
 for /f %%i in ('powershell -NoProfile -Command "(Get-Date -Format 'yyyyMMdd-HHmmss')"') do set TS=%%i
-set "LOGFILE=%LOGDIR%\combined-service.%TS%.log"
+set "LOGFILE=%LOGDIR%\${project.artifactId}.%TS%.log"
 powershell -NoProfile -Command ^
   "$ErrorActionPreference='Stop';" ^
   "$dir = (Get-Item -LiteralPath '%DIR%').FullName;" ^
-  "$jar = Join-Path $dir 'combined-service.jar';" ^
+  "$jar = Join-Path $dir '${project.build.finalName}.jar';" ^
   "$port = $env:PORT; if (-not $port) { $port = '8080' }" ^
   "$javaOpts = $env:JAVA_OPTS;" ^
   "$args = @(); if ($javaOpts) { $args += $javaOpts -split ' ' }" ^
   "$args += ('-Dserver.port=' + $port); $args += '-Dserver.address=0.0.0.0'; $args += '-jar'; $args += $jar;" ^
-  "$log = Join-Path $dir ('logs\\combined-service.' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log');" ^
+  "$log = Join-Path $dir ('logs\\${project.artifactId}.' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log');" ^
   "$p = Start-Process -FilePath 'java' -ArgumentList $args -RedirectStandardOutput $log -RedirectStandardError $log -PassThru -WindowStyle Hidden;" ^
   "$p.Id | Out-File -Encoding ascii (Join-Path $dir 'app.pid');" ^
-  "Write-Output ('Started combined-service PID ' + $p.Id + ' Port ' + $port + ' Logs ' + $log)"
+  "Write-Output ('Started ${project.artifactId} PID ' + $p.Id + ' Port ' + $port + ' Logs ' + $log)"
 endlocal
 ]]></echo>
-                                <echo file="${project.build.directory}/deploy/stop-combined-service.sh"><![CDATA[
+                                <echo file="${project.build.directory}/deploy/stop-${project.artifactId}.sh"><![CDATA[
 #!/usr/bin/env bash
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PID_FILE="$DIR/app.pid"
-JAR="$DIR/combined-service.jar"
+JAR="$DIR/${project.build.finalName}.jar"
 if [[ -f "$PID_FILE" ]]; then PID="$(cat "$PID_FILE")" || true; else PID=""; fi
 if [[ -n "${PID}" ]] && ps -p "$PID" >/dev/null 2>&1; then
   kill "$PID" || true
@@ -229,12 +148,12 @@ else
   pkill -f "$JAR" || true
 fi
 ]]></echo>
-                                <chmod file="${project.build.directory}/deploy/stop-combined-service.sh" perm="755" failonerror="false"/>
-                                <echo file="${project.build.directory}/deploy/stop-combined-service.bat"><![CDATA[
+                                <chmod file="${project.build.directory}/deploy/stop-${project.artifactId}.sh" perm="755" failonerror="false"/>
+                                <echo file="${project.build.directory}/deploy/stop-${project.artifactId}.bat"><![CDATA[
 @echo off
 setlocal
 set "DIR=%~dp0"
-set "JAR=%DIR%combined-service.jar"
+set "JAR=%DIR%${project.build.finalName}.jar"
 set "PIDFILE=%DIR%app.pid"
 if exist "%PIDFILE%" (
   for /f "usebackq delims=" %%p in ("%PIDFILE%") do set PID=%%p
@@ -289,7 +208,6 @@ endlocal
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 

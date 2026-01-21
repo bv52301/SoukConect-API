@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+persistence:
+  type: jpa
+
+spring:
+  flyway:
+    enabled: false
+  datasource:
+    url: "jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?allowPublicKeyRetrieval=true&useSsl=false"
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MariaDBDialect
+    open-in-view: false
+
+logging:
+  level:
+    org.hibernate.SQL: info
+    org.hibernate.type.descriptor.sql.BasicBinder: warn

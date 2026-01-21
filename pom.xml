@@ -42,6 +42,7 @@
         <module>web-admin</module>
         <module>services/cuisine-service</module>
         <module>services/auth-service</module>
+        <module>services/cart-service</module>
     </modules>
 
     <build>
