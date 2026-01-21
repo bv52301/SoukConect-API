@@ -1,0 +1,19 @@
+{
+  "name": "@soukconect/ui",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./index.js",
+  "types": "./index.ts",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.1",
+  "dependencies": {
+    "react": "^18.3.0",
+    "lucide-react": "^0.263.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "typescript": "^5"
+  }
+}
