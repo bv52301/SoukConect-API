@@ -1,0 +1,14 @@
+{
+  "name": "@soukconect/types",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./index.js",
+  "types":"./index.ts",
+  "devDependencies": {
+    "typescript": "^5"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.1"
+}
