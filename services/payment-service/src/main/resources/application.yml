@@ -1,0 +1,55 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  datasource:
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+  flyway:
+    enabled: false
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+
+logging:
+  level:
+    org.hibernate.SQL: info
+    org.hibernate.type.descriptor.sql.BasicBinder: warn
+    com.souk.payment.gateway: debug
+
+# Payment Gateway Configuration
+payment:
+  gateway:
+    default-gateway: ${PAYMENT_DEFAULT_GATEWAY:STRIPE}
+
+    # Stripe Configuration
+    stripe:
+      enabled: ${STRIPE_ENABLED:false}
+      secret-key: ${STRIPE_SECRET_KEY:}
+      publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+      api-version: "2023-10-16"
+
+    # CMI (Morocco) Configuration
+    cmi:
+      enabled: ${CMI_ENABLED:false}
+      api-url: ${CMI_API_URL:https://testpayment.cmi.co.ma/fim/est3Dgate}
+      merchant-id: ${CMI_MERCHANT_ID:}
+      terminal-id: ${CMI_TERMINAL_ID:}
+      secret-key: ${CMI_SECRET_KEY:}
+      store-key: ${CMI_STORE_KEY:}
+      test-mode: ${CMI_TEST_MODE:true}
