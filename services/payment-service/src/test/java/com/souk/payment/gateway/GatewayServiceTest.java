@@ -1,5 +1,6 @@
 package com.souk.payment.gateway;
 
+import com.souk.payment.gateway.PaymentGateway;
 import com.souk.payment.gateway.config.GatewayProperties;
 import com.souk.payment.gateway.model.GatewayRequest;
 import com.souk.payment.gateway.model.GatewayResponse;

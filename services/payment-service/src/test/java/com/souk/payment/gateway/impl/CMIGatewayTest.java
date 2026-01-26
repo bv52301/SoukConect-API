@@ -2,6 +2,7 @@ package com.souk.payment.gateway.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.payment.gateway.config.GatewayProperties;
+import com.souk.payment.gateway.impl.CMIGateway;
 import com.souk.payment.gateway.model.GatewayRequest;
 import com.souk.payment.gateway.model.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -173,23 +174,22 @@ class CMIGatewayTest {
                     .build();
 
             String apiResponse = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "APPROVED",
-                    "responseCode": "00",
-                    "amount": "10000",
-                    "currency": "504",
-                    "cardBrand": "VISA",
-                    "cardNumber": "****1234"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "APPROVED",
+                        "responseCode": "00",
+                        "amount": "10000",
+                        "currency": "504",
+                        "cardBrand": "VISA",
+                        "cardNumber": "****1234"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.charge(request);
 
@@ -202,8 +202,7 @@ class CMIGatewayTest {
                     eq("https://api.cmi.ma/payment/process"),
                     eq(HttpMethod.POST),
                     httpEntityCaptor.capture(),
-                    eq(String.class)
-            );
+                    eq(String.class));
 
             HttpEntity<String> capturedEntity = httpEntityCaptor.getValue();
             assertThat(capturedEntity.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
@@ -222,20 +221,19 @@ class CMIGatewayTest {
                     .build();
 
             String apiResponse = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "3DS_REQUIRED",
-                    "responseCode": "00",
-                    "redirectUrl": "https://cmi.ma/3ds/verify"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "3DS_REQUIRED",
+                        "responseCode": "00",
+                        "redirectUrl": "https://cmi.ma/3ds/verify"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.charge(request);
 
@@ -255,20 +253,19 @@ class CMIGatewayTest {
                     .build();
 
             String apiResponse = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "DECLINED",
-                    "responseCode": "05",
-                    "responseMessage": "Do not honor"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "DECLINED",
+                        "responseCode": "05",
+                        "responseMessage": "Do not honor"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.charge(request);
 
@@ -294,20 +291,19 @@ class CMIGatewayTest {
                     .build();
 
             String apiResponse = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "AUTHORIZED",
-                    "responseCode": "00",
-                    "authCode": "AUTH123"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "AUTHORIZED",
+                        "responseCode": "00",
+                        "authCode": "AUTH123"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.authorize(request);
 
@@ -319,8 +315,7 @@ class CMIGatewayTest {
                     eq("https://api.cmi.ma/payment/authorize"),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            );
+                    eq(String.class));
         }
     }
 
@@ -332,19 +327,18 @@ class CMIGatewayTest {
         @DisplayName("should capture authorized payment")
         void shouldCaptureAuthorizedPayment() throws Exception {
             String apiResponse = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "CAPTURED",
-                    "responseCode": "00"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "CAPTURED",
+                        "responseCode": "00"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.capture("CMI123456", new BigDecimal("100.00"));
 
@@ -355,8 +349,7 @@ class CMIGatewayTest {
                     eq("https://api.cmi.ma/payment/capture"),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            );
+                    eq(String.class));
         }
     }
 
@@ -368,20 +361,19 @@ class CMIGatewayTest {
         @DisplayName("should process refund successfully")
         void shouldProcessRefund() throws Exception {
             String apiResponse = """
-                {
-                    "transactionId": "REF123456",
-                    "status": "REFUNDED",
-                    "responseCode": "00",
-                    "amount": "5000"
-                }
-                """;
+                    {
+                        "transactionId": "REF123456",
+                        "status": "REFUNDED",
+                        "responseCode": "00",
+                        "amount": "5000"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.refund("CMI123456", new BigDecimal("50.00"), "Customer request");
 
@@ -392,8 +384,7 @@ class CMIGatewayTest {
                     eq("https://api.cmi.ma/payment/refund"),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            );
+                    eq(String.class));
         }
     }
 
@@ -405,19 +396,18 @@ class CMIGatewayTest {
         @DisplayName("should cancel payment successfully")
         void shouldCancelPayment() throws Exception {
             String apiResponse = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "CANCELLED",
-                    "responseCode": "00"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "CANCELLED",
+                        "responseCode": "00"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.cancel("CMI123456");
 
@@ -428,8 +418,7 @@ class CMIGatewayTest {
                     eq("https://api.cmi.ma/payment/cancel"),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            );
+                    eq(String.class));
         }
     }
 
@@ -441,21 +430,20 @@ class CMIGatewayTest {
         @DisplayName("should get payment status")
         void shouldGetPaymentStatus() throws Exception {
             String apiResponse = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "APPROVED",
-                    "responseCode": "00",
-                    "amount": "10000",
-                    "currency": "504"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "APPROVED",
+                        "responseCode": "00",
+                        "amount": "10000",
+                        "currency": "504"
+                    }
+                    """;
 
             when(restTemplate.exchange(
                     anyString(),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            )).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
+                    eq(String.class))).thenReturn(new ResponseEntity<>(apiResponse, HttpStatus.OK));
 
             GatewayResponse response = cmiGateway.getStatus("CMI123456");
 
@@ -466,8 +454,7 @@ class CMIGatewayTest {
                     eq("https://api.cmi.ma/payment/status"),
                     eq(HttpMethod.POST),
                     any(HttpEntity.class),
-                    eq(String.class)
-            );
+                    eq(String.class));
         }
     }
 
@@ -479,14 +466,14 @@ class CMIGatewayTest {
         @DisplayName("should parse webhook successfully")
         void shouldParseWebhook() {
             String payload = """
-                {
-                    "transactionId": "CMI123456",
-                    "status": "APPROVED",
-                    "responseCode": "00",
-                    "amount": "10000",
-                    "currency": "504"
-                }
-                """;
+                    {
+                        "transactionId": "CMI123456",
+                        "status": "APPROVED",
+                        "responseCode": "00",
+                        "amount": "10000",
+                        "currency": "504"
+                    }
+                    """;
 
             GatewayResponse response = cmiGateway.parseWebhook(payload);
 

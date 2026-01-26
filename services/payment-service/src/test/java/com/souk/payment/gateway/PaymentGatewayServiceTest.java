@@ -2,6 +2,8 @@ package com.souk.payment.gateway;
 
 import com.souk.common.adapters.jpa.PaymentJpaAdapter;
 import com.souk.common.domain.Payment;
+import com.souk.payment.gateway.GatewayService;
+import com.souk.payment.gateway.PaymentGatewayService;
 import com.souk.payment.gateway.model.GatewayRequest;
 import com.souk.payment.gateway.model.GatewayResponse;
 import com.souk.payment.gateway.model.GatewayResponse.GatewayStatus;
@@ -99,7 +101,8 @@ class PaymentGatewayServiceTest {
         @DisplayName("should update payment on failed charge")
         void shouldUpdatePaymentOnFailure() {
             // Arrange
-            GatewayResponse failureResponse = GatewayResponse.failure("STRIPE", "card_declined", "Your card was declined");
+            GatewayResponse failureResponse = GatewayResponse.failure("STRIPE", "card_declined",
+                    "Your card was declined");
 
             when(paymentAdapter.findById(1L)).thenReturn(Optional.of(testPayment));
             when(gatewayService.charge("STRIPE", testRequest)).thenReturn(failureResponse);
@@ -125,7 +128,8 @@ class PaymentGatewayServiceTest {
         @DisplayName("should handle 3DS requires action response")
         void shouldHandle3DSRequiresAction() {
             // Arrange
-            GatewayResponse requiresActionResponse = GatewayResponse.requiresAction("STRIPE", "pi_123", "https://stripe.com/3ds");
+            GatewayResponse requiresActionResponse = GatewayResponse.requiresAction("STRIPE", "pi_123",
+                    "https://stripe.com/3ds");
 
             when(paymentAdapter.findById(1L)).thenReturn(Optional.of(testPayment));
             when(gatewayService.charge("STRIPE", testRequest)).thenReturn(requiresActionResponse);
