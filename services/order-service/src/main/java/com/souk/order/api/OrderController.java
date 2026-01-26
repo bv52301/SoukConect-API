@@ -71,13 +71,38 @@ public class OrderController {
             @Valid @RequestBody OrderUpdateRequest req) {
         return orderPort.findById(id)
                 .map(existing -> {
-                    existing.setStatus(req.status());
-                    existing.setPaymentMethod(req.paymentMethod());
-                    existing.setRequestedDeliveryDate(req.requestedDeliveryDate());
-                    existing.setDeliveryFlexibility(req.deliveryFlexibility());
-                    existing.setDeliverySlotStart(req.deliverySlotStart());
-                    existing.setDeliverySlotEnd(req.deliverySlotEnd());
-                    existing.setNotes(req.notes());
+                    if (req.status() != null)
+                        existing.setStatus(req.status());
+                    if (req.paymentMethod() != null)
+                        existing.setPaymentMethod(req.paymentMethod());
+                    if (req.requestedDeliveryDate() != null)
+                        existing.setRequestedDeliveryDate(req.requestedDeliveryDate());
+                    if (req.deliveryFlexibility() != null)
+                        existing.setDeliveryFlexibility(req.deliveryFlexibility());
+                    if (req.deliverySlotStart() != null)
+                        existing.setDeliverySlotStart(req.deliverySlotStart());
+                    if (req.deliverySlotEnd() != null)
+                        existing.setDeliverySlotEnd(req.deliverySlotEnd());
+                    if (req.notes() != null)
+                        existing.setNotes(req.notes());
+                    Order updated = orderPort.save(existing);
+                    return ResponseEntity.ok(OrderResponse.from(updated));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // --- Update order status only ---
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<OrderResponse> updateStatus(@PathVariable @Min(1) Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String statusStr = body.get("status");
+        if (statusStr == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Order.OrderStatus status = Order.OrderStatus.valueOf(statusStr);
+        return orderPort.findById(id)
+                .map(existing -> {
+                    existing.setStatus(status);
                     Order updated = orderPort.save(existing);
                     return ResponseEntity.ok(OrderResponse.from(updated));
                 })

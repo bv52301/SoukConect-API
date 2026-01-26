@@ -1,37 +1,31 @@
 server:
-  port: ${SERVER_PORT:8082}
-
-app:
-  security:
-    enabled: ${SECURITY_ENABLED:true}
-  jwt:
-    secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-minimum-32-chars}
-    issuer: ${JWT_ISSUER:soukconect}
-  cors:
-    allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:*}
+  port: ${SERVER_PORT:8081}
 
 spring:
-  profiles:
-    active: combined
   datasource:
     url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
-    driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: none       # disable Hibernate DDL validation; rely on db-installer/migrations
+      ddl-auto: none
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
     properties:
       hibernate:
+        format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
   flyway:
-    enabled: false       # disable Flyway until you need migrations
-  main:
-    allow-bean-definition-overriding: true
+    enabled: false
   redis:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:}
+
+logging:
+  level:
+    org.hibernate.SQL: info
+    org.hibernate.type.descriptor.sql.BasicBinder: warn

@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.souk.product",
         "com.souk.vendor",
         "com.souk.cuisine",
+        "com.souk.customer",
         "com.souk.common"
 })
 public class CombinedServiceApplication {

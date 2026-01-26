@@ -76,7 +76,7 @@ public class Order {
 
     // --- ENUMS ---
     public enum OrderStatus {
-        PENDING, CONFIRMED, PAID, SHIPPED, DELIVERED, CANCELLED, REFUNDED
+        PENDING, CONFIRMED, PAID, SHIPPED, DELIVERED, CANCELLED, REFUNDED, FAILED
     }
 
     public enum PaymentMethod {
