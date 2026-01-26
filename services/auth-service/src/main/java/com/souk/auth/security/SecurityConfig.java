@@ -22,6 +22,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
+@org.springframework.context.annotation.Profile("!combined")
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -29,8 +30,8 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                         JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-                         CorsProperties corsProperties) {
+            JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+            CorsProperties corsProperties) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
         this.corsProperties = corsProperties;
@@ -39,40 +40,39 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Allow CORS preflight requests
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Allow CORS preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Public endpoints
-                .requestMatchers("/api/v1/auth/register").permitAll()
-                .requestMatchers("/api/v1/auth/login").permitAll()
-                .requestMatchers("/api/v1/auth/refresh").permitAll()
-                .requestMatchers("/api/v1/auth/verify-email").permitAll()
-                .requestMatchers("/api/v1/auth/mfa/verify-login").permitAll()
-                .requestMatchers("/api/v1/auth/password/reset-request").permitAll()
-                .requestMatchers("/api/v1/auth/password/reset").permitAll()
-                .requestMatchers("/api/v1/auth/oauth/**").permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/auth/verify-email").permitAll()
+                        .requestMatchers("/api/v1/auth/mfa/verify-login").permitAll()
+                        .requestMatchers("/api/v1/auth/password/reset-request").permitAll()
+                        .requestMatchers("/api/v1/auth/password/reset").permitAll()
+                        .requestMatchers("/api/v1/auth/oauth/**").permitAll()
 
-                // Swagger/OpenAPI
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // Swagger/OpenAPI
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
-                // Actuator health endpoint
-                .requestMatchers("/actuator/health").permitAll()
+                        // Actuator health endpoint
+                        .requestMatchers("/actuator/health").permitAll()
 
-                // Admin only endpoints
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // Admin only endpoints
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-                // Support endpoints (Admin and Support)
-                .requestMatchers("/api/v1/support/**").hasAnyRole("ADMIN", "SUPPORT")
+                        // Support endpoints (Admin and Support)
+                        .requestMatchers("/api/v1/support/**").hasAnyRole("ADMIN", "SUPPORT")
 
-                // All other endpoints require authentication
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        // All other endpoints require authentication
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/auth/oauth")
+@RequestMapping("/v1/auth/oauth")
 @Tag(name = "OAuth", description = "Social login endpoints")
 public class OAuthController {
 
@@ -65,8 +65,7 @@ public class OAuthController {
                     email,
                     profilePictureUrl,
                     deviceInfo,
-                    ipAddress
-            );
+                    ipAddress);
 
             return ResponseEntity.ok(ApiResponse.success("OAuth login successful", response));
         } catch (Exception e) {
@@ -82,8 +81,7 @@ public class OAuthController {
         Map<String, Boolean> providers = Map.of(
                 "google", oAuthProperties.getGoogle().isEnabled(),
                 "apple", oAuthProperties.getApple().isEnabled(),
-                "facebook", oAuthProperties.getFacebook().isEnabled()
-        );
+                "facebook", oAuthProperties.getFacebook().isEnabled());
 
         return ResponseEntity.ok(ApiResponse.success(providers));
     }

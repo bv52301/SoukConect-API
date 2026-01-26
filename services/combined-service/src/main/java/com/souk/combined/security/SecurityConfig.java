@@ -57,6 +57,9 @@ public class SecurityConfig {
                         // Allow CORS preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Public Auth Endpoints
+                        .requestMatchers("/v1/auth/**").permitAll()
+
                         // GET requests for browsing (read-only access)
                         .requestMatchers(HttpMethod.GET,
                                 "/vendors/**",
