@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8083}
+  port: ${SERVER_PORT:8085}
 
 spring:
   datasource:
@@ -38,9 +38,9 @@ payment:
 
     # Stripe Configuration
     stripe:
-      enabled: ${STRIPE_ENABLED:false}
-      secret-key: ${STRIPE_SECRET_KEY:}
-      publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
+      enabled: ${STRIPE_ENABLED:true}
+      secret-key: ${STRIPE_SECRET_KEY:sk_test_placeholder}
+      publishable-key: ${STRIPE_PUBLISHABLE_KEY:pk_test_placeholder}
       webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
       api-version: "2023-10-16"
 

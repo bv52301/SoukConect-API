@@ -1,13 +1,12 @@
 package com.souk.payment.gateway.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * Configuration properties for payment gateways.
  * Loaded from application.yml under 'payment.gateway' prefix.
+ * Bean is registered via @EnableConfigurationProperties in GatewayConfig.
  */
-@Component
 @ConfigurationProperties(prefix = "payment.gateway")
 public class GatewayProperties {
 
