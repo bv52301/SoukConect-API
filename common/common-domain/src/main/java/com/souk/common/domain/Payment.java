@@ -285,6 +285,9 @@ public class Payment {
     @Column(name = "next_retry_at")
     private LocalDateTime nextRetryAt;
 
+    @Column(name = "retryable")
+    private Boolean retryable;
+
     // --- Audit Timestamps ---
     @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
@@ -602,6 +605,9 @@ public class Payment {
 
     public LocalDateTime getNextRetryAt() { return nextRetryAt; }
     public void setNextRetryAt(LocalDateTime nextRetryAt) { this.nextRetryAt = nextRetryAt; }
+
+    public Boolean getRetryable() { return retryable; }
+    public void setRetryable(Boolean retryable) { this.retryable = retryable; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

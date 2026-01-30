@@ -114,6 +114,7 @@ public record PaymentResponse(
         Integer attemptCount,
         LocalDateTime lastAttemptAt,
         LocalDateTime nextRetryAt,
+        Boolean retryable,
 
         // --- Timestamps ---
         LocalDateTime createdAt,
@@ -197,6 +198,7 @@ public record PaymentResponse(
                 p.getAttemptCount(),
                 p.getLastAttemptAt(),
                 p.getNextRetryAt(),
+                p.getRetryable(),
                 p.getCreatedAt(),
                 p.getUpdatedAt()
         );

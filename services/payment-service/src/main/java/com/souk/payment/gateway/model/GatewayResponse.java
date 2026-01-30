@@ -1,5 +1,7 @@
 package com.souk.payment.gateway.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
@@ -50,7 +52,9 @@ public class GatewayResponse {
     private String receiptNumber;
 
     // Timestamps
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private Instant processedAt;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private Instant capturedAt;
 
     // Raw response (for debugging/logging)

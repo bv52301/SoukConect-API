@@ -194,6 +194,7 @@ CREATE TABLE IF NOT EXISTS payments (
     attempt_count INT DEFAULT 0,
     last_attempt_at TIMESTAMP NULL,
     next_retry_at TIMESTAMP NULL,
+    retryable BOOLEAN NULL,
 
     -- ==================== AUDIT TIMESTAMPS ====================
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

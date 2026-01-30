@@ -211,6 +211,7 @@ else
   pkill -f "$JAR" || true
 fi
 ]]></echo>
+                                <fixcrlf srcdir="${project.build.directory}/deploy" includes="*.sh" eol="lf" />
                                 <chmod file="${project.build.directory}/deploy/stop-${project.artifactId}.sh" perm="755" failonerror="false"/>
                                 <echo file="${project.build.directory}/deploy/stop-${project.artifactId}.bat"><![CDATA[
 @echo off
