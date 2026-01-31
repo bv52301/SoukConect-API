@@ -481,4 +481,92 @@ public class ProductController {
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    // ------------------------------------------------------------
+    // 🔹 INVENTORY RESERVATION ENDPOINTS
+    // ------------------------------------------------------------
+
+    /** Reserve inventory for an order */
+    @org.springframework.transaction.annotation.Transactional
+    @PostMapping("/{id}/reserve")
+    public ResponseEntity<?> reserveInventory(
+            @PathVariable @Min(1) Long id,
+            @RequestBody Map<String, Integer> request
+    ) {
+        Integer quantity = request.get("quantity");
+        if (quantity == null || quantity <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid quantity"));
+        }
+
+        return productPort.findById(id)
+                .map(product -> {
+                    if (product.getAvailableQuantity() < quantity) {
+                        return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                                .body(Map.of(
+                                        "error", "Insufficient stock",
+                                        "available", product.getAvailableQuantity(),
+                                        "requested", quantity
+                                ));
+                    }
+
+                    int currentReserved = product.getReservedQuantity() != null ? product.getReservedQuantity() : 0;
+                    product.setReservedQuantity(currentReserved + quantity);
+                    productPort.save(product);
+
+                    return ResponseEntity.ok(Map.of(
+                            "productId", id,
+                            "reserved", quantity,
+                            "availableAfter", product.getAvailableQuantity()
+                    ));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Release reserved inventory (e.g., on order cancellation) */
+    @org.springframework.transaction.annotation.Transactional
+    @PostMapping("/{id}/release")
+    public ResponseEntity<?> releaseInventory(
+            @PathVariable @Min(1) Long id,
+            @RequestBody Map<String, Integer> request
+    ) {
+        Integer quantity = request.get("quantity");
+        if (quantity == null || quantity <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid quantity"));
+        }
+
+        return productPort.findById(id)
+                .map(product -> {
+                    int currentReserved = product.getReservedQuantity() != null ? product.getReservedQuantity() : 0;
+                    int newReserved = Math.max(0, currentReserved - quantity);
+                    product.setReservedQuantity(newReserved);
+                    productPort.save(product);
+
+                    return ResponseEntity.ok(Map.of(
+                            "productId", id,
+                            "released", quantity,
+                            "availableAfter", product.getAvailableQuantity()
+                    ));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Check product availability */
+    @GetMapping("/{id}/availability")
+    public ResponseEntity<?> checkAvailability(
+            @PathVariable @Min(1) Long id,
+            @RequestParam(required = false, defaultValue = "1") Integer quantity
+    ) {
+        return productPort.findById(id)
+                .map(product -> {
+                    boolean available = product.getAvailableQuantity() >= quantity;
+                    return ResponseEntity.ok(Map.of(
+                            "productId", id,
+                            "available", available,
+                            "stockQuantity", product.getStockQuantity() != null ? product.getStockQuantity() : 0,
+                            "reservedQuantity", product.getReservedQuantity() != null ? product.getReservedQuantity() : 0,
+                            "availableQuantity", product.getAvailableQuantity()
+                    ));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

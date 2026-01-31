@@ -1,5 +1,7 @@
 server:
   port: 8080
+  servlet:
+    context-path: /api
 
 persistence:
   type: jpa   # your config-driven switch (use "redis" when you swap)

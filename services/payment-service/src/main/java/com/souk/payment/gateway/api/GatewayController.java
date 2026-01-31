@@ -29,7 +29,7 @@ import java.util.Map;
  * 3. Return response to BPM
  */
 @RestController
-@RequestMapping("/api/v1/gateway")
+@RequestMapping("/v1/gateway")
 @Tag(name = "Payment Gateway", description = "Payment gateway operations for BPM integration")
 public class GatewayController {
 

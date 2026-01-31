@@ -59,7 +59,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/gateway/available")
+    @DisplayName("GET /v1/gateway/available")
     class GetAvailableGateways {
 
         @Test
@@ -67,7 +67,7 @@ class GatewayControllerTest {
         void shouldReturnEnabledGateways() throws Exception {
             when(gatewayService.getEnabledGateways()).thenReturn(List.of(mockStripeGateway));
 
-            mockMvc.perform(get("/api/v1/gateway/available"))
+            mockMvc.perform(get("/v1/gateway/available"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].id").value("STRIPE"))
                     .andExpect(jsonPath("$[0].displayName").value("Stripe"));
@@ -78,7 +78,7 @@ class GatewayControllerTest {
         void shouldReturnEmptyList() throws Exception {
             when(gatewayService.getEnabledGateways()).thenReturn(List.of());
 
-            mockMvc.perform(get("/api/v1/gateway/available"))
+            mockMvc.perform(get("/v1/gateway/available"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray())
                     .andExpect(jsonPath("$").isEmpty());
@@ -86,7 +86,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/gateway/{gatewayId}/supports")
+    @DisplayName("GET /v1/gateway/{gatewayId}/supports")
     class CheckSupport {
 
         @Test
@@ -96,7 +96,7 @@ class GatewayControllerTest {
             when(mockStripeGateway.supports("CARD")).thenReturn(true);
             when(mockStripeGateway.supportsCurrency("USD")).thenReturn(true);
 
-            mockMvc.perform(get("/api/v1/gateway/STRIPE/supports")
+            mockMvc.perform(get("/v1/gateway/STRIPE/supports")
                             .param("paymentMethod", "CARD")
                             .param("currency", "USD"))
                     .andExpect(status().isOk())
@@ -112,7 +112,7 @@ class GatewayControllerTest {
             when(mockStripeGateway.supports("CARD")).thenReturn(true);
             when(mockStripeGateway.supportsCurrency("XYZ")).thenReturn(false);
 
-            mockMvc.perform(get("/api/v1/gateway/STRIPE/supports")
+            mockMvc.perform(get("/v1/gateway/STRIPE/supports")
                             .param("paymentMethod", "CARD")
                             .param("currency", "XYZ"))
                     .andExpect(status().isOk())
@@ -123,7 +123,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/charge")
+    @DisplayName("POST /v1/gateway/{gatewayId}/charge")
     class Charge {
 
         @Test
@@ -142,7 +142,7 @@ class GatewayControllerTest {
             when(paymentGatewayService.charge(eq("STRIPE"), eq(1L), any(GatewayRequest.class)))
                     .thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/charge")
+            mockMvc.perform(post("/v1/gateway/STRIPE/charge")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -172,7 +172,7 @@ class GatewayControllerTest {
             when(paymentGatewayService.charge(eq("STRIPE"), eq(1L), any(GatewayRequest.class)))
                     .thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/charge")
+            mockMvc.perform(post("/v1/gateway/STRIPE/charge")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -182,7 +182,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/authorize")
+    @DisplayName("POST /v1/gateway/{gatewayId}/authorize")
     class Authorize {
 
         @Test
@@ -206,7 +206,7 @@ class GatewayControllerTest {
             when(paymentGatewayService.authorize(eq("STRIPE"), eq(1L), any(GatewayRequest.class)))
                     .thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/authorize")
+            mockMvc.perform(post("/v1/gateway/STRIPE/authorize")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -216,7 +216,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/capture")
+    @DisplayName("POST /v1/gateway/{gatewayId}/capture")
     class Capture {
 
         @Test
@@ -229,7 +229,7 @@ class GatewayControllerTest {
             when(paymentGatewayService.capture("STRIPE", 1L, "pi_123", new BigDecimal("100.00")))
                     .thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/capture")
+            mockMvc.perform(post("/v1/gateway/STRIPE/capture")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -240,7 +240,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/cancel")
+    @DisplayName("POST /v1/gateway/{gatewayId}/cancel")
     class Cancel {
 
         @Test
@@ -255,7 +255,7 @@ class GatewayControllerTest {
 
             when(paymentGatewayService.cancel("STRIPE", 1L, "pi_123")).thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/cancel")
+            mockMvc.perform(post("/v1/gateway/STRIPE/cancel")
                             .param("paymentId", "1")
                             .param("gatewayPaymentId", "pi_123"))
                     .andExpect(status().isOk())
@@ -265,7 +265,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/refund")
+    @DisplayName("POST /v1/gateway/{gatewayId}/refund")
     class Refund {
 
         @Test
@@ -283,7 +283,7 @@ class GatewayControllerTest {
             when(paymentGatewayService.refund("STRIPE", 1L, "pi_123", new BigDecimal("50.00"), "Customer request"))
                     .thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/refund")
+            mockMvc.perform(post("/v1/gateway/STRIPE/refund")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -293,7 +293,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/gateway/{gatewayId}/status/{gatewayPaymentId}")
+    @DisplayName("GET /v1/gateway/{gatewayId}/status/{gatewayPaymentId}")
     class GetStatus {
 
         @Test
@@ -303,7 +303,7 @@ class GatewayControllerTest {
 
             when(gatewayService.getStatus("STRIPE", "pi_123")).thenReturn(response);
 
-            mockMvc.perform(get("/api/v1/gateway/STRIPE/status/pi_123"))
+            mockMvc.perform(get("/v1/gateway/STRIPE/status/pi_123"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.gatewayPaymentId").value("pi_123"));
@@ -311,7 +311,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/webhook")
+    @DisplayName("POST /v1/gateway/{gatewayId}/webhook")
     class HandleWebhook {
 
         @Test
@@ -322,7 +322,7 @@ class GatewayControllerTest {
             when(paymentGatewayService.handleWebhook("STRIPE", "{\"type\":\"payment_intent.succeeded\"}", "sig_123"))
                     .thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/webhook")
+            mockMvc.perform(post("/v1/gateway/STRIPE/webhook")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"type\":\"payment_intent.succeeded\"}")
                             .header("Stripe-Signature", "sig_123"))
@@ -338,7 +338,7 @@ class GatewayControllerTest {
             when(paymentGatewayService.handleWebhook("STRIPE", "{}", "bad_sig"))
                     .thenReturn(response);
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/webhook")
+            mockMvc.perform(post("/v1/gateway/STRIPE/webhook")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}")
                             .header("Stripe-Signature", "bad_sig"))
@@ -349,7 +349,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/customer")
+    @DisplayName("POST /v1/gateway/{gatewayId}/customer")
     class CreateCustomer {
 
         @Test
@@ -358,7 +358,7 @@ class GatewayControllerTest {
             when(gatewayService.createCustomer("STRIPE", "test@example.com", "Test User"))
                     .thenReturn("cus_123");
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/customer")
+            mockMvc.perform(post("/v1/gateway/STRIPE/customer")
                             .param("email", "test@example.com")
                             .param("name", "Test User"))
                     .andExpect(status().isOk())
@@ -367,7 +367,7 @@ class GatewayControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/gateway/{gatewayId}/customer/{customerId}/payment-method")
+    @DisplayName("POST /v1/gateway/{gatewayId}/customer/{customerId}/payment-method")
     class SavePaymentMethod {
 
         @Test
@@ -376,7 +376,7 @@ class GatewayControllerTest {
             when(gatewayService.savePaymentMethod("STRIPE", "cus_123", "tok_123"))
                     .thenReturn("pm_123");
 
-            mockMvc.perform(post("/api/v1/gateway/STRIPE/customer/cus_123/payment-method")
+            mockMvc.perform(post("/v1/gateway/STRIPE/customer/cus_123/payment-method")
                             .param("paymentToken", "tok_123"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.paymentMethodId").value("pm_123"));

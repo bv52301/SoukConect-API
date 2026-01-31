@@ -11,7 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/auth/password")
+@RequestMapping("/v1/auth/password")
 @Tag(name = "Password", description = "Password management endpoints")
 public class PasswordController {
 

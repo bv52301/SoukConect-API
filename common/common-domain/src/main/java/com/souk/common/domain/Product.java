@@ -49,6 +49,12 @@ public class Product {
     @Column(name = "use_vendor_schedule", nullable = false)
     private Boolean useVendorSchedule = false;
 
+    @Column(name = "stock_quantity")
+    private Integer stockQuantity = 0;
+
+    @Column(name = "reserved_quantity")
+    private Integer reservedQuantity = 0;
+
     @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
 
@@ -102,4 +108,16 @@ public class Product {
 
     public List<ProductLocation> getLocations() { return locations; }
     public void setLocations(List<ProductLocation> locations) { this.locations = locations; }
+
+    public Integer getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
+
+    public Integer getReservedQuantity() { return reservedQuantity; }
+    public void setReservedQuantity(Integer reservedQuantity) { this.reservedQuantity = reservedQuantity; }
+
+    public Integer getAvailableQuantity() {
+        int stock = stockQuantity != null ? stockQuantity : 0;
+        int reserved = reservedQuantity != null ? reservedQuantity : 0;
+        return stock - reserved;
+    }
 }

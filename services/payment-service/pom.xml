@@ -121,6 +121,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load environment variables from .env file if it exists
+if [[ -f "${DIR}/.env" ]]; then
+  set -a
+  source "${DIR}/.env"
+  set +a
+fi
+
 JAR="${DIR}/${project.build.finalName}.jar"
 PORT="${PORT:-8083}"
 JAVA_OPTS="${JAVA_OPTS:-}"
