@@ -52,7 +52,7 @@ public class AuthControllerTest {
 
         when(authenticationService.register(any(RegisterRequest.class))).thenReturn(user);
 
-        mockMvc.perform(post("/v1/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -74,7 +74,7 @@ public class AuthControllerTest {
         when(authenticationService.login(any(LoginRequest.class), anyString(), anyString())).thenReturn(tokenResponse);
 
         // Header User-Agent is used in controller logic for device info
-        mockMvc.perform(post("/v1/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                 .header("User-Agent", "TestDevice")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
