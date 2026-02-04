@@ -115,6 +115,11 @@
             <artifactId>customer-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.souk</groupId>
+            <artifactId>cart-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

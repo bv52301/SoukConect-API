@@ -12,6 +12,27 @@ app:
   cors:
     allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:*}
 
+# Springdoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    # Aggregate documentation from internal + external services
+    urls:
+      # Internal (Combined) Services
+      - name: 1. Core Platform (Vendors, Products, Cart)
+        url: /v3/api-docs
+      # External Microservices (via Nginx proxies)
+      - name: 2. Authentication Service
+        url: /api/auth-api/v3/api-docs
+      - name: 3. Order Service
+        url: /api/order-api/v3/api-docs
+      - name: 4. Payment Service
+        url: /api/payment-api/v3/api-docs
+
 spring:
   profiles:
     active: combined

@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.souk.vendor",
         "com.souk.cuisine",
         "com.souk.customer",
+        "com.souk.cart",
         "com.souk.common",
         "com.souk.order",
         "com.souk.auth",
