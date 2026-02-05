@@ -16,9 +16,9 @@ public class ProductLocation {
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("vendorLocationId")
-    @JoinColumn(name = "vendor_location_id", nullable = false)
-    private VendorLocation vendorLocation;
+    @MapsId("addressId")
+    @JoinColumn(name = "address_id", nullable = false)
+    private Address address;
 
     @Column(nullable = false)
     private String sku;
@@ -38,10 +38,10 @@ public class ProductLocation {
     // Constructors
     public ProductLocation() {}
 
-    public ProductLocation(Product product, VendorLocation vendorLocation, String sku, Boolean available, Integer stock) {
-        this.id = new ProductLocationId(product.getId(), vendorLocation.getId());
+    public ProductLocation(Product product, Address address, String sku, Boolean available, Integer stock) {
+        this.id = new ProductLocationId(product.getId(), address.getId());
         this.product = product;
-        this.vendorLocation = vendorLocation;
+        this.address = address;
         this.sku = sku;
         this.available = available;
         this.stock = stock;
@@ -54,8 +54,8 @@ public class ProductLocation {
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
 
-    public VendorLocation getVendorLocation() { return vendorLocation; }
-    public void setVendorLocation(VendorLocation vendorLocation) { this.vendorLocation = vendorLocation; }
+    public Address getAddress() { return address; }
+    public void setAddress(Address address) { this.address = address; }
 
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }

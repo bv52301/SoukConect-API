@@ -1,11 +1,12 @@
 package com.souk.common.domain;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Where;
 import org.hibernate.type.SqlTypes;
 
 
@@ -38,21 +39,6 @@ public class Vendor {
     @Column(length = 300)
     private String image;
 
-    @Column(length = 100)
-    private String address1;
-
-    @Column(length = 100)
-    private String address2;
-
-    @Column(length = 100)
-    private String state;
-
-    @Column(length = 255)
-    private String landmark;
-
-    @Column(length = 15)
-    private String pincode;
-
     @Column(name = "contact_name", length = 100)
     private String contactName;
 
@@ -68,11 +54,10 @@ public class Vendor {
     @Column(name = "schedule_updated", insertable = false, updatable = false)
     private LocalDateTime scheduleUpdated;
 
-    @Column(nullable = false, precision = 10, scale = 8)
-    private BigDecimal latitude = BigDecimal.ZERO;
-
-    @Column(nullable = false, precision = 11, scale = 8)
-    private BigDecimal longitude = BigDecimal.ZERO;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", referencedColumnName = "vendor_id")
+    @Where(clause = "owner_type = 'VENDOR'")
+    private List<Address> addresses = new ArrayList<>();
 
     // === Getters & Setters ===
     public Long getVendorId() { return vendorId; }
@@ -96,21 +81,6 @@ public class Vendor {
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }
 
-    public String getAddress1() { return address1; }
-    public void setAddress1(String address1) { this.address1 = address1; }
-
-    public String getAddress2() { return address2; }
-    public void setAddress2(String address2) { this.address2 = address2; }
-
-    public String getState() { return state; }
-    public void setState(String state) { this.state = state; }
-
-    public String getLandmark() { return landmark; }
-    public void setLandmark(String landmark) { this.landmark = landmark; }
-
-    public String getPincode() { return pincode; }
-    public void setPincode(String pincode) { this.pincode = pincode; }
-
     public String getContactName() { return contactName; }
     public void setContactName(String contactName) { this.contactName = contactName; }
 
@@ -124,9 +94,23 @@ public class Vendor {
 
     public LocalDateTime getScheduleUpdated() { return scheduleUpdated; }
 
-    public BigDecimal getLatitude() { return latitude; }
-    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
+    public List<Address> getAddresses() { return addresses; }
+    public void setAddresses(List<Address> addresses) {
+        this.addresses.clear();
+        if (addresses != null) {
+            addresses.forEach(a -> {
+                a.setOwnerId(this.vendorId);
+                a.setOwnerType(Address.OwnerType.VENDOR);
+                if (this.userId != null) a.setUserId(this.userId);
+            });
+            this.addresses.addAll(addresses);
+        }
+    }
 
-    public BigDecimal getLongitude() { return longitude; }
-    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
+    public void addAddress(Address address) {
+        address.setOwnerId(this.vendorId);
+        address.setOwnerType(Address.OwnerType.VENDOR);
+        if (this.userId != null) address.setUserId(this.userId);
+        this.addresses.add(address);
+    }
 }

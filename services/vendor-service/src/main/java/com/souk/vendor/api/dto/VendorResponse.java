@@ -1,10 +1,12 @@
 package com.souk.vendor.api.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.souk.common.domain.Address;
 import com.souk.common.domain.Vendor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record VendorResponse(
         Long vendorId,
@@ -24,9 +26,16 @@ public record VendorResponse(
         BigDecimal latitude,
         BigDecimal longitude,
         LocalDateTime createdAt,
-        LocalDateTime scheduleUpdated
+        LocalDateTime scheduleUpdated,
+        List<AddressResponse> addresses
 ) {
     public static VendorResponse from(Vendor v) {
+        // Try to find primary address for flat fields (backward compatibility)
+        Address primary = v.getAddresses().stream()
+                .filter(a -> "PRIMARY".equals(a.getAddressType()) || a.isDefault())
+                .findFirst()
+                .orElse(null);
+
         return new VendorResponse(
                 v.getVendorId(),
                 v.getName(),
@@ -34,18 +43,53 @@ public record VendorResponse(
                 v.getSupportedCategories(),
                 v.getSchedule(),
                 v.getImage(),
-                v.getAddress1(),
-                v.getAddress2(),
-                v.getState(),
-                v.getLandmark(),
-                v.getPincode(),
+                primary != null ? primary.getStreet() : null,
+                primary != null ? primary.getUnit() : null,
+                primary != null ? primary.getState() : null,
+                primary != null ? primary.getLandmark() : null,
+                primary != null ? primary.getPostalCode() : null,
                 v.getContactName(),
                 v.getPhoneNumber(),
                 v.getEmail(),
-                v.getLatitude(),
-                v.getLongitude(),
+                primary != null ? primary.getLatitude() : null,
+                primary != null ? primary.getLongitude() : null,
                 v.getCreatedAt(),
-                v.getScheduleUpdated()
+                v.getScheduleUpdated(),
+                v.getAddresses().stream().map(AddressResponse::from).toList()
         );
+    }
+
+    public record AddressResponse(
+            Long id,
+            String label,
+            String addressType,
+            String street,
+            String unit,
+            String city,
+            String state,
+            String postalCode,
+            String country,
+            String landmark,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            boolean isDefault
+    ) {
+        public static AddressResponse from(Address a) {
+            return new AddressResponse(
+                    a.getId(),
+                    a.getLabel(),
+                    a.getAddressType(),
+                    a.getStreet(),
+                    a.getUnit(),
+                    a.getCity(),
+                    a.getState(),
+                    a.getPostalCode(),
+                    a.getCountry(),
+                    a.getLandmark(),
+                    a.getLatitude(),
+                    a.getLongitude(),
+                    a.isDefault()
+            );
+        }
     }
 }

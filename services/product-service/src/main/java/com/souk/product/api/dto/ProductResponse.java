@@ -132,8 +132,8 @@ public record ProductResponse(
     ) {
         public static LocationAssignmentResponse from(ProductLocation location) {
             return new LocationAssignmentResponse(
-                    location.getVendorLocation().getId(),
-                    location.getVendorLocation().getLocationName(),
+                    location.getAddress().getId(),
+                    location.getAddress().getLabel(),
                     location.getSku(),
                     location.getAvailable(),
                     location.getStock()

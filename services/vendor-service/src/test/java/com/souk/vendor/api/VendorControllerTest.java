@@ -2,7 +2,7 @@ package com.souk.vendor.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Vendor;
-import com.souk.common.domain.VendorLocation;
+import com.souk.common.domain.Address;
 import com.souk.common.port.DataAccessPort;
 import com.souk.common.adapters.jpa.repository.VendorRepository;
 import com.souk.vendor.api.dto.VendorCreateRequest;
@@ -39,7 +39,7 @@ public class VendorControllerTest {
     private VendorRepository vendorRepository;
 
     @MockitoBean
-    private DataAccessPort<VendorLocation, Long> vendorLocationPort;
+    private DataAccessPort<Address, Long> addressPort;
 
     @Autowired
     private ObjectMapper objectMapper;

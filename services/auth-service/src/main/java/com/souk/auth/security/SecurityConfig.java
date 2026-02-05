@@ -49,14 +49,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Public endpoints
-                        .requestMatchers("/api/v1/auth/register").permitAll()
-                        .requestMatchers("/api/v1/auth/login").permitAll()
-                        .requestMatchers("/api/v1/auth/refresh").permitAll()
-                        .requestMatchers("/api/v1/auth/verify-email").permitAll()
-                        .requestMatchers("/api/v1/auth/mfa/verify-login").permitAll()
-                        .requestMatchers("/api/v1/auth/password/reset-request").permitAll()
-                        .requestMatchers("/api/v1/auth/password/reset").permitAll()
-                        .requestMatchers("/api/v1/auth/oauth/**").permitAll()
+                        .requestMatchers("/v1/auth/register").permitAll()
+                        .requestMatchers("/v1/auth/login").permitAll()
+                        .requestMatchers("/v1/auth/refresh").permitAll()
+                        .requestMatchers("/v1/auth/verify-email").permitAll()
+                        .requestMatchers("/v1/auth/mfa/verify-login").permitAll()
+                        .requestMatchers("/v1/auth/password/reset-request").permitAll()
+                        .requestMatchers("/v1/auth/password/reset").permitAll()
+                        .requestMatchers("/v1/auth/oauth/**").permitAll()
 
                         // Swagger/OpenAPI
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
@@ -65,10 +65,10 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
 
                         // Admin only endpoints
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/admin/**").hasRole("ADMIN")
 
                         // Support endpoints (Admin and Support)
-                        .requestMatchers("/api/v1/support/**").hasAnyRole("ADMIN", "SUPPORT")
+                        .requestMatchers("/v1/support/**").hasAnyRole("ADMIN", "SUPPORT")
 
                         // All other endpoints require authentication
                         .anyRequest().authenticated())

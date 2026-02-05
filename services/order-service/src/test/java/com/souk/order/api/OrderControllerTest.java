@@ -2,7 +2,7 @@ package com.souk.order.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Customer;
-import com.souk.common.domain.CustomerAddress;
+import com.souk.common.domain.Address;
 import com.souk.common.domain.Order;
 import com.souk.common.port.DataAccessPort;
 import com.souk.order.api.dto.OrderCreateRequest;
@@ -40,7 +40,7 @@ public class OrderControllerTest {
         private DataAccessPort<Customer, Long> customerPort;
 
         @MockitoBean
-        private DataAccessPort<CustomerAddress, Long> addressPort;
+        private DataAccessPort<Address, Long> addressPort;
 
         @Autowired
         private ObjectMapper objectMapper;
@@ -91,7 +91,7 @@ public class OrderControllerTest {
                 Customer c = new Customer();
                 c.setId(1L);
 
-                CustomerAddress addr = new CustomerAddress();
+                Address addr = new Address();
                 addr.setId(1L);
 
                 Order saved = new Order();

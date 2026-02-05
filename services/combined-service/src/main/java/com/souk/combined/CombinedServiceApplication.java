@@ -10,10 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.souk.cuisine",
         "com.souk.customer",
         "com.souk.cart",
-        "com.souk.common",
-        "com.souk.order",
-        "com.souk.auth",
-        "com.souk.payment"
+        "com.souk.common"
 })
 public class CombinedServiceApplication {
     public static void main(String[] args) {

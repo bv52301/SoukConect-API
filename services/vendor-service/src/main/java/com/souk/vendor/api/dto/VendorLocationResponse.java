@@ -1,7 +1,7 @@
 package com.souk.vendor.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.souk.common.domain.VendorLocation;
+import com.souk.common.domain.Address;
 
 import java.math.BigDecimal;
 
@@ -17,21 +17,25 @@ public record VendorLocationResponse(
         String state,
         String pincode,
         String landmark,
-        String status
+        String status,
+        String addressType,
+        Boolean isDefault
 ) {
-    public static VendorLocationResponse from(VendorLocation location) {
+    public static VendorLocationResponse from(Address address) {
         return new VendorLocationResponse(
-                location.getId(),
-                location.getVendorId(),
-                location.getLocationName(),
-                location.getLatitude(),
-                location.getLongitude(),
-                location.getAddress1(),
-                location.getAddress2(),
-                location.getState(),
-                location.getPincode(),
-                location.getLandmark(),
-                location.getStatus() != null ? location.getStatus().name() : null
+                address.getId(),
+                address.getOwnerId(),
+                address.getLabel(), // Using label as locationName
+                address.getLatitude(),
+                address.getLongitude(),
+                address.getStreet(),
+                address.getUnit(),
+                address.getState(),
+                address.getPostalCode(),
+                address.getLandmark(),
+                address.isActive() ? "ACTIVE" : "INACTIVE",
+                address.getAddressType(),
+                address.isDefault()
         );
     }
 }

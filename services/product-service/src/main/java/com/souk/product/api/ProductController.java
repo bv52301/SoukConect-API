@@ -2,7 +2,7 @@ package com.souk.product.api;
 
 import com.souk.common.domain.Product;
 import com.souk.common.domain.ProductLocation;
-import com.souk.common.domain.VendorLocation;
+import com.souk.common.domain.Address;
 import com.souk.common.domain.ProductMedia;
 import com.souk.common.domain.ProductMedia.ValidationStatus;
 import com.souk.common.domain.ProductMedia.StorageProvider;
@@ -39,18 +39,18 @@ public class ProductController {
     private final ProductQueryPort productQueryPort;
     private final DataAccessPort<ProductMedia, Long> mediaPort;
     private final DataAccessPort<Vendor, Long> vendorPort;
-    private final DataAccessPort<VendorLocation, Long> vendorLocationPort;
+    private final DataAccessPort<Address, Long> addressPort;
 
     public ProductController(DataAccessPort<Product, Long> productPort,
                              ProductQueryPort productQueryPort,
                              DataAccessPort<ProductMedia, Long> mediaPort,
                              DataAccessPort<Vendor, Long> vendorPort,
-                             DataAccessPort<VendorLocation, Long> vendorLocationPort) {
+                             DataAccessPort<Address, Long> addressPort) {
         this.productPort = productPort;
         this.productQueryPort = productQueryPort;
         this.mediaPort = mediaPort;
         this.vendorPort = vendorPort;
-        this.vendorLocationPort = vendorLocationPort;
+        this.addressPort = addressPort;
     }
 
     // ------------------------------------------------------------
@@ -109,12 +109,12 @@ public class ProductController {
         if (req.locations() != null && !req.locations().isEmpty()) {
             List<ProductLocation> locationAssignments = new ArrayList<>();
             for (var loc : req.locations()) {
-                VendorLocation vendorLocation = vendorLocationPort.findById(loc.vendorLocationId())
-                        .orElseThrow(() -> new RuntimeException("Vendor location not found: " + loc.vendorLocationId()));
+                Address address = addressPort.findById(loc.vendorLocationId())
+                        .orElseThrow(() -> new RuntimeException("Address not found: " + loc.vendorLocationId()));
 
                 ProductLocation assignment = new ProductLocation(
                         saved,
-                        vendorLocation,
+                        address,
                         loc.sku(),
                         loc.available() != null ? loc.available() : true,
                         loc.stock() != null ? loc.stock() : 0
@@ -147,12 +147,12 @@ public class ProductController {
                         // Add new location assignments
                         List<ProductLocation> locationAssignments = new ArrayList<>();
                         for (var loc : req.locations()) {
-                            VendorLocation vendorLocation = vendorLocationPort.findById(loc.vendorLocationId())
-                                    .orElseThrow(() -> new RuntimeException("Vendor location not found: " + loc.vendorLocationId()));
+                            Address address = addressPort.findById(loc.vendorLocationId())
+                                    .orElseThrow(() -> new RuntimeException("Address not found: " + loc.vendorLocationId()));
 
                             ProductLocation assignment = new ProductLocation(
                                     updated,
-                                    vendorLocation,
+                                    address,
                                     loc.sku(),
                                     loc.available() != null ? loc.available() : true,
                                     loc.stock() != null ? loc.stock() : 0

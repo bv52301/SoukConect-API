@@ -18,7 +18,8 @@ public record OrderCreateRequest(
         String notes,
         List<OrderItemRequest> items
 ) {
-    public Order toDomain(Customer customer, CustomerAddress address) {
+    // Updated to use Unified Address entity
+    public Order toDomain(Customer customer, Address address) {
         Order order = new Order();
         order.setCustomer(customer);
         order.setAddress(address);

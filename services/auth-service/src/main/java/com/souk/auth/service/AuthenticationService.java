@@ -6,8 +6,8 @@ import com.souk.common.adapters.jpa.repository.UserRepository;
 import com.souk.common.adapters.jpa.repository.VendorRepository;
 import com.souk.common.adapters.redis.keys.AuthKeys;
 import com.souk.common.adapters.redis.config.RedisTTL;
+import com.souk.common.domain.Address;
 import com.souk.common.domain.Customer;
-import com.souk.common.domain.CustomerAddress;
 import com.souk.common.domain.User;
 import com.souk.common.domain.UserRole;
 import com.souk.common.domain.Vendor;
@@ -224,16 +224,17 @@ public class AuthenticationService {
 
         // Add address if provided
         if (!isBlank(request.getStreet()) || !isBlank(request.getCity())) {
-            CustomerAddress address = new CustomerAddress();
-            address.setCustomer(customer);
+            Address address = new Address();
             address.setStreet(request.getStreet());
             address.setUnit(request.getUnit());
             address.setCity(request.getCity());
-            address.setPostal(request.getPostal());
+            address.setPostalCode(request.getPostal());
             address.setCountry(request.getCountry());
-            address.setType(CustomerAddress.AddressType.HOME);
-            address.setIsDefault(true);
-            customer.getAddresses().add(address);
+            address.setAddressType("HOME");
+            address.setDefault(true);
+
+            // Helper method in Customer handles ownerId/Type/UserId setting
+            customer.addAddress(address);
         }
 
         customerRepository.save(customer);
@@ -248,17 +249,24 @@ public class AuthenticationService {
         vendor.setContactName(request.getContactName());
         vendor.setEmail(email);
         vendor.setPhoneNumber(request.getPhone());
-        vendor.setAddress1(request.getAddress1());
-        vendor.setAddress2(request.getAddress2());
-        vendor.setState(request.getState());
-        vendor.setLandmark(request.getLandmark());
-        vendor.setPincode(request.getPincode());
-        if (request.getLatitude() != null) {
-            vendor.setLatitude(request.getLatitude());
+
+        // Add primary address if provided
+        if (!isBlank(request.getAddress1()) || !isBlank(request.getState())) {
+            Address address = new Address();
+            address.setStreet(request.getAddress1());
+            address.setUnit(request.getAddress2());
+            address.setState(request.getState());
+            address.setLandmark(request.getLandmark());
+            address.setPostalCode(request.getPincode());
+            address.setLatitude(request.getLatitude());
+            address.setLongitude(request.getLongitude());
+            address.setAddressType("PRIMARY");
+            address.setDefault(true);
+
+            // Helper method in Vendor handles ownerId/Type/UserId setting
+            vendor.addAddress(address);
         }
-        if (request.getLongitude() != null) {
-            vendor.setLongitude(request.getLongitude());
-        }
+
         vendorRepository.save(vendor);
         log.info("Vendor profile created for user: {}", user.getUserId());
     }

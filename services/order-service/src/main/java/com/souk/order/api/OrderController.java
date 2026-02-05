@@ -2,7 +2,7 @@ package com.souk.order.api;
 
 import com.souk.common.domain.Order;
 import com.souk.common.domain.Customer;
-import com.souk.common.domain.CustomerAddress;
+import com.souk.common.domain.Address;
 import com.souk.common.port.DataAccessPort;
 import com.souk.order.api.dto.OrderCreateRequest;
 import com.souk.order.api.dto.OrderResponse;
@@ -22,11 +22,11 @@ public class OrderController {
 
     private final DataAccessPort<Order, Long> orderPort;
     private final DataAccessPort<Customer, Long> customerPort;
-    private final DataAccessPort<CustomerAddress, Long> addressPort;
+    private final DataAccessPort<Address, Long> addressPort;
 
     public OrderController(DataAccessPort<Order, Long> orderPort,
             DataAccessPort<Customer, Long> customerPort,
-            DataAccessPort<CustomerAddress, Long> addressPort) {
+            DataAccessPort<Address, Long> addressPort) {
         this.orderPort = orderPort;
         this.customerPort = customerPort;
         this.addressPort = addressPort;

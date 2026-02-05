@@ -1,6 +1,7 @@
 package com.souk.vendor.api.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.souk.common.domain.Address;
 import com.souk.common.domain.Vendor;
 
 import java.math.BigDecimal;
@@ -29,16 +30,25 @@ public record VendorCreateRequest(
         v.setSupportedCategories(supportedCategories);
         v.setSchedule(schedule);
         v.setImage(image);
-        v.setAddress1(address1);
-        v.setAddress2(address2);
-        v.setState(state);
-        v.setLandmark(landmark);
-        v.setPincode(pincode);
         v.setContactName(contactName);
         v.setPhoneNumber(phoneNumber);
         v.setEmail(email);
-        v.setLatitude(latitude != null ? latitude : BigDecimal.ZERO);
-        v.setLongitude(longitude != null ? longitude : BigDecimal.ZERO);
+
+        // Map primary address fields to a new Address entity
+        if (address1 != null || pincode != null || latitude != null || longitude != null) {
+            Address addr = new Address();
+            addr.setStreet(address1);
+            addr.setUnit(address2);
+            addr.setState(state);
+            addr.setLandmark(landmark);
+            addr.setPostalCode(pincode);
+            addr.setLatitude(latitude != null ? latitude : BigDecimal.ZERO);
+            addr.setLongitude(longitude != null ? longitude : BigDecimal.ZERO);
+            addr.setAddressType("PRIMARY");
+            addr.setDefault(true);
+            v.addAddress(addr);
+        }
+
         return v;
     }
 }

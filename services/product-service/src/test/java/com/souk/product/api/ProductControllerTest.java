@@ -3,7 +3,7 @@ package com.souk.product.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Product;
 import com.souk.common.domain.Vendor;
-import com.souk.common.domain.VendorLocation;
+import com.souk.common.domain.Address;
 import com.souk.common.domain.ProductMedia;
 import com.souk.common.port.DataAccessPort;
 import com.souk.common.port.ProductQueryPort;
@@ -45,7 +45,7 @@ public class ProductControllerTest {
     private DataAccessPort<Vendor, Long> vendorPort;
 
     @MockitoBean
-    private DataAccessPort<VendorLocation, Long> vendorLocationPort;
+    private DataAccessPort<Address, Long> addressPort;
 
     @Autowired
     private ObjectMapper objectMapper;

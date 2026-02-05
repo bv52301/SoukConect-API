@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "customers")
@@ -35,9 +36,11 @@ public class Customer {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    // ✅ One-to-Many relationship to customer_addresses
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<CustomerAddress> addresses = new ArrayList<>();
+    // ✅ One-to-Many relationship to addresses table
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", referencedColumnName = "customer_id")
+    @Where(clause = "owner_type = 'CUSTOMER'")
+    private List<Address> addresses = new ArrayList<>();
 
     // --- Getters & Setters ---
     public Long getId() { return id; }
@@ -61,12 +64,23 @@ public class Customer {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
-    public List<CustomerAddress> getAddresses() { return addresses; }
-    public void setAddresses(List<CustomerAddress> addresses) {
+    public List<Address> getAddresses() { return addresses; }
+    public void setAddresses(List<Address> addresses) {
         this.addresses.clear();
         if (addresses != null) {
-            addresses.forEach(a -> a.setCustomer(this)); // maintain bidirectional link
+            addresses.forEach(a -> {
+                a.setOwnerId(this.id);
+                a.setOwnerType(Address.OwnerType.CUSTOMER);
+                if (this.userId != null) a.setUserId(this.userId);
+            });
             this.addresses.addAll(addresses);
         }
+    }
+
+    public void addAddress(Address address) {
+        address.setOwnerId(this.id);
+        address.setOwnerType(Address.OwnerType.CUSTOMER);
+        if (this.userId != null) address.setUserId(this.userId);
+        this.addresses.add(address);
     }
 }

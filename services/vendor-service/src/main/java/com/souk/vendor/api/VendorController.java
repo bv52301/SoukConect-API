@@ -1,7 +1,7 @@
 package com.souk.vendor.api;
 
 import com.souk.common.domain.Vendor;
-import com.souk.common.domain.VendorLocation;
+import com.souk.common.domain.Address;
 import com.souk.common.port.DataAccessPort;
 import com.souk.common.adapters.jpa.repository.VendorRepository;
 import com.souk.vendor.util.VendorExcelParser;
@@ -29,14 +29,14 @@ public class VendorController {
 
     private final DataAccessPort<Vendor, Long> vendorPort;
     private final VendorRepository vendorRepo;
-    private final DataAccessPort<VendorLocation, Long> vendorLocationPort;
+    private final DataAccessPort<Address, Long> addressPort;
 
     public VendorController(DataAccessPort<Vendor, Long> vendorPort,
                            VendorRepository vendorRepo,
-                           DataAccessPort<VendorLocation, Long> vendorLocationPort) {
+                           DataAccessPort<Address, Long> addressPort) {
         this.vendorPort = vendorPort;
         this.vendorRepo = vendorRepo;
-        this.vendorLocationPort = vendorLocationPort;
+        this.addressPort = addressPort;
     }
 
     // --- List all vendors ---
@@ -89,21 +89,7 @@ public class VendorController {
                                                  @RequestBody @Valid VendorUpdateRequest req) {
         return vendorPort.findById(id)
                 .map(existing -> {
-                    existing.setName(req.name());
-                    existing.setDescription(req.description());
-                    existing.setSupportedCategories(req.supportedCategories());
-                    existing.setSchedule(req.schedule());
-                    existing.setImage(req.image());
-                    existing.setAddress1(req.address1());
-                    existing.setAddress2(req.address2());
-                    existing.setState(req.state());
-                    existing.setLandmark(req.landmark());
-                    existing.setPincode(req.pincode());
-                    existing.setContactName(req.contactName());
-                    existing.setPhoneNumber(req.phoneNumber());
-                    existing.setEmail(req.email());
-                    if (req.latitude() != null) existing.setLatitude(req.latitude());
-                    if (req.longitude() != null) existing.setLongitude(req.longitude());
+                    req.updateDomain(existing);
                     Vendor saved = vendorPort.save(existing);
                     return ResponseEntity.ok(VendorResponse.from(saved));
                 })
@@ -124,7 +110,7 @@ public class VendorController {
     // --- Get all vendor locations (for multi-select in product form) ---
     @GetMapping("/locations")
     public List<VendorLocationResponse> getAllVendorLocations() {
-        return vendorLocationPort.findAll().stream()
+        return addressPort.findAll().stream().filter(a -> a.getOwnerType() == Address.OwnerType.VENDOR)
                 .map(VendorLocationResponse::from)
                 .toList();
     }
@@ -167,59 +153,41 @@ public class VendorController {
                         vendor = new Vendor();
                     }
 
-                    // Update fields if provided
-                    if (row.name != null && !row.name.isEmpty()) {
-                        vendor.setName(row.name);
-                    }
-                    if (row.email != null && !row.email.isEmpty()) {
-                        vendor.setEmail(row.email);
-                    }
-                    if (row.phoneNumber != null && !row.phoneNumber.isEmpty()) {
-                        vendor.setPhoneNumber(row.phoneNumber);
-                    }
-                    if (row.description != null) {
-                        vendor.setDescription(row.description);
-                    }
-                    if (row.address1 != null) {
-                        vendor.setAddress1(row.address1);
-                    }
-                    if (row.address2 != null) {
-                        vendor.setAddress2(row.address2);
-                    }
-                    if (row.state != null) {
-                        vendor.setState(row.state);
-                    }
-                    if (row.pincode != null) {
-                        vendor.setPincode(row.pincode);
-                    }
-                    if (row.landmark != null) {
-                        vendor.setLandmark(row.landmark);
-                    }
-                    if (row.contactName != null) {
-                        vendor.setContactName(row.contactName);
-                    }
-                    if (row.latitude != null) {
-                        vendor.setLatitude(row.latitude);
-                    }
-                    if (row.longitude != null) {
-                        vendor.setLongitude(row.longitude);
-                    }
-                    if (row.supportedCategories != null) {
-                        vendor.setSupportedCategories(row.supportedCategories);
-                    }
-                    if (row.schedule != null) {
-                        vendor.setSchedule(row.schedule);
-                    }
-                    if (row.image != null) {
-                        vendor.setImage(row.image);
+                    // Update basic fields if provided
+                    if (row.name != null && !row.name.isEmpty()) vendor.setName(row.name);
+                    if (row.email != null && !row.email.isEmpty()) vendor.setEmail(row.email);
+                    if (row.phoneNumber != null && !row.phoneNumber.isEmpty()) vendor.setPhoneNumber(row.phoneNumber);
+                    if (row.description != null) vendor.setDescription(row.description);
+                    if (row.contactName != null) vendor.setContactName(row.contactName);
+                    if (row.supportedCategories != null) vendor.setSupportedCategories(row.supportedCategories);
+                    if (row.schedule != null) vendor.setSchedule(row.schedule);
+                    if (row.image != null) vendor.setImage(row.image);
+
+                    // Update or Add Primary Address
+                    Address primary = vendor.getAddresses().stream()
+                            .filter(a -> "PRIMARY".equals(a.getAddressType()) || a.isDefault())
+                            .findFirst()
+                            .orElse(null);
+
+                    if (primary == null && (row.address1 != null || row.pincode != null)) {
+                        primary = new Address();
+                        primary.setAddressType("PRIMARY");
+                        primary.setDefault(true);
+                        vendor.addAddress(primary);
                     }
 
-                    // Ensure latitude and longitude have defaults if not set
-                    if (vendor.getLatitude() == null) {
-                        vendor.setLatitude(BigDecimal.ZERO);
-                    }
-                    if (vendor.getLongitude() == null) {
-                        vendor.setLongitude(BigDecimal.ZERO);
+                    if (primary != null) {
+                        if (row.address1 != null) primary.setStreet(row.address1);
+                        if (row.address2 != null) primary.setUnit(row.address2);
+                        if (row.state != null) primary.setState(row.state);
+                        if (row.landmark != null) primary.setLandmark(row.landmark);
+                        if (row.pincode != null) primary.setPostalCode(row.pincode);
+                        if (row.latitude != null) primary.setLatitude(row.latitude);
+                        if (row.longitude != null) primary.setLongitude(row.longitude);
+                        
+                        // Default coords if missing
+                        if (primary.getLatitude() == null) primary.setLatitude(BigDecimal.ZERO);
+                        if (primary.getLongitude() == null) primary.setLongitude(BigDecimal.ZERO);
                     }
 
                     // Save the vendor

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/auth/oauth")
+@RequestMapping("/v1/auth/oauth")
 @Tag(name = "OAuth", description = "Social login endpoints")
 public class OAuthController {
 

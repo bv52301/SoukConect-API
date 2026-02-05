@@ -11,23 +11,23 @@ public class ProductLocationId implements Serializable {
     @Column(name = "product_id")
     private Long productId;
 
-    @Column(name = "vendor_location_id")
-    private Long vendorLocationId;
+    @Column(name = "address_id")
+    private Long addressId;
 
     // Constructors
     public ProductLocationId() {}
 
-    public ProductLocationId(Long productId, Long vendorLocationId) {
+    public ProductLocationId(Long productId, Long addressId) {
         this.productId = productId;
-        this.vendorLocationId = vendorLocationId;
+        this.addressId = addressId;
     }
 
     // Getters and Setters
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
 
-    public Long getVendorLocationId() { return vendorLocationId; }
-    public void setVendorLocationId(Long vendorLocationId) { this.vendorLocationId = vendorLocationId; }
+    public Long getAddressId() { return addressId; }
+    public void setAddressId(Long addressId) { this.addressId = addressId; }
 
     // equals and hashCode
     @Override
@@ -36,11 +36,11 @@ public class ProductLocationId implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         ProductLocationId that = (ProductLocationId) o;
         return Objects.equals(productId, that.productId) &&
-               Objects.equals(vendorLocationId, that.vendorLocationId);
+               Objects.equals(addressId, that.addressId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(productId, vendorLocationId);
+        return Objects.hash(productId, addressId);
     }
 }

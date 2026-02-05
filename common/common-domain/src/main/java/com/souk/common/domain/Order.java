@@ -30,7 +30,7 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
-    private CustomerAddress address;
+    private Address address;
 
     // --- Financial fields ---
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
@@ -94,8 +94,8 @@ public class Order {
     public Customer getCustomer() { return customer; }
     public void setCustomer(Customer customer) { this.customer = customer; }
 
-    public CustomerAddress getAddress() { return address; }
-    public void setAddress(CustomerAddress address) { this.address = address; }
+    public Address getAddress() { return address; }
+    public void setAddress(Address address) { this.address = address; }
 
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
