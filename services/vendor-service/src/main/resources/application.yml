@@ -22,16 +22,16 @@ spring:
       # Prevent snake_case conversion; respect explicit @Column names
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
+    show-sql: false
 
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.MySQLDialect
     open-in-view: false
 
 # Optional SQL logging while debugging
 logging:
   level:
-    org.hibernate.SQL: info
+    org.hibernate.SQL: warn
     org.hibernate.type.descriptor.sql.BasicBinder: warn

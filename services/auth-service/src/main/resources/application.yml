@@ -29,7 +29,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format_sql: false
 
   # Redis Configuration
   data:
@@ -42,9 +42,9 @@ spring:
       timeout: 2000ms
       lettuce:
         pool:
-          max-active: 50
-          max-idle: 20
-          min-idle: 10
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
           max-wait: 2000ms
 
   # Mail Configuration
@@ -124,6 +124,7 @@ logging:
     com.souk: DEBUG
     org.springframework.security: INFO
     org.springframework.web: INFO
+    io.lettuce.core.protocol.ConnectionWatchdog: warn
 
 # Actuator
 management:

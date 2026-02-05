@@ -80,6 +80,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/preview/**").permitAll()
 
+                        // Internal workflow endpoints (not user-facing)
+                        .requestMatchers(HttpMethod.POST, "/products/*/reserve", "/products/*/release").permitAll()
+
                         // =====================================================
                         // PROTECTED ENDPOINTS - Authentication required
                         // =====================================================
