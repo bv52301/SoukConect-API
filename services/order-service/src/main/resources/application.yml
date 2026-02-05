@@ -31,3 +31,10 @@ logging:
   level:
     org.hibernate.SQL: info
     org.hibernate.type.descriptor.sql.BasicBinder: warn
+
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

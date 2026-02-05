@@ -102,7 +102,7 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JAR="${DIR}/${project.build.finalName}.jar"
-PORT="${PORT:-8080}"
+PORT="${PORT:-8081}"
 JAVA_OPTS="${JAVA_OPTS:-}"
 mkdir -p "${DIR}/logs"
 TS="$(date +%Y%m%d-%H%M%S)"
@@ -117,7 +117,7 @@ echo "Started ${project.artifactId} on port ${PORT}. Logs: ${LOG_FILE} (PID $(ca
 setlocal
 set "DIR=%~dp0"
 set "JAR=%DIR%${project.build.finalName}.jar"
-if "%PORT%"=="" set PORT=8080
+if "%PORT%"=="" set PORT=8081
 set "JAVA_OPTS=%JAVA_OPTS%"
 set "LOGDIR=%DIR%logs"
 if not exist "%LOGDIR%" mkdir "%LOGDIR%"
@@ -127,7 +127,7 @@ powershell -NoProfile -Command ^
   "$ErrorActionPreference='Stop';" ^
   "$dir = (Get-Item -LiteralPath '%DIR%').FullName;" ^
   "$jar = Join-Path $dir '${project.build.finalName}.jar';" ^
-  "$port = $env:PORT; if (-not $port) { $port = '8080' }" ^
+  "$port = $env:PORT; if (-not $port) { $port = '8081' }" ^
   "$javaOpts = $env:JAVA_OPTS;" ^
   "$args = @(); if ($javaOpts) { $args += $javaOpts -split ' ' }" ^
   "$args += ('-Dserver.port=' + $port); $args += '-Dserver.address=0.0.0.0'; $args += '-jar'; $args += $jar;" ^

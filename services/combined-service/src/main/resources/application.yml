@@ -27,11 +27,11 @@ springdoc:
         url: /v3/api-docs
       # External Microservices (via Nginx proxies)
       - name: 2. Authentication Service
-        url: /api/auth-api/v3/api-docs
+        url: /auth-api/v3/api-docs
       - name: 3. Order Service
-        url: /api/order-api/v3/api-docs
+        url: /order-api/v3/api-docs
       - name: 4. Payment Service
-        url: /api/payment-api/v3/api-docs
+        url: /payment-api/v3/api-docs
 
 spring:
   profiles:

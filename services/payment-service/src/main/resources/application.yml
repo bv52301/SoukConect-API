@@ -33,6 +33,13 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: warn
     com.souk.payment.gateway: debug
 
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 # Payment Gateway Configuration
 payment:
   gateway:
