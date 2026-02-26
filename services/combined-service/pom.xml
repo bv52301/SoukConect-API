@@ -120,6 +120,11 @@
             <artifactId>cart-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.souk</groupId>
+            <artifactId>order-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -141,7 +146,7 @@
                         </goals>
                         <configuration>
                             <includeGroupIds>com.souk</includeGroupIds>
-                            <includeArtifactIds>product-service,vendor-service,cuisine-service,cart-service,customer-service</includeArtifactIds>
+                            <includeArtifactIds>product-service,vendor-service,cuisine-service,cart-service,customer-service,order-service</includeArtifactIds>
                             <includeTypes>jar</includeTypes>
                             <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                         </configuration>

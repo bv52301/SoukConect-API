@@ -23,14 +23,12 @@ springdoc:
     # Aggregate documentation from internal + external services
     urls:
       # Internal (Combined) Services
-      - name: 1. Core Platform (Vendors, Products, Cart)
+      - name: 1. Core Platform (Vendors, Products, Cart, Orders)
         url: /v3/api-docs
       # External Microservices (via Nginx proxies)
       - name: 2. Authentication Service
         url: /auth-api/v3/api-docs
-      - name: 3. Order Service
-        url: /order-api/v3/api-docs
-      - name: 4. Payment Service
+      - name: 3. Payment Service
         url: /payment-api/v3/api-docs
 
 spring:

@@ -28,7 +28,7 @@ public class OpenApiConfig {
                 ));
     }
 
-    // Bundled services: product, vendor, cuisine, cart, customer
+    // Bundled services: product, vendor, cuisine, cart, customer, order
 
     @Bean
     public GroupedOpenApi allApis() {
@@ -82,6 +82,15 @@ public class OpenApiConfig {
                 .group("6-cart")
                 .displayName("Cart")
                 .pathsToMatch("/cart/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi orderApis() {
+        return GroupedOpenApi.builder()
+                .group("7-order")
+                .displayName("Orders")
+                .pathsToMatch("/orders/**")
                 .build();
     }
 }

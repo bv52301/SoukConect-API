@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -77,11 +79,18 @@ public class PaymentController {
     }
 
     @GetMapping("/status/{status}")
-    public List<PaymentResponse> getByStatus(@PathVariable String status) {
-        Payment.PaymentStatus paymentStatus = Payment.PaymentStatus.valueOf(status);
-        return paymentAdapter.findByStatus(paymentStatus).stream()
+    public ResponseEntity<?> getByStatus(@PathVariable String status) {
+        Payment.PaymentStatus paymentStatus;
+        try {
+            paymentStatus = Payment.PaymentStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid status '" + status + "'. Valid values: " +
+                            Arrays.toString(Payment.PaymentStatus.values())));
+        }
+        return ResponseEntity.ok(paymentAdapter.findByStatus(paymentStatus).stream()
                 .map(PaymentResponse::from)
-                .toList();
+                .toList());
     }
 
     @GetMapping("/gateway/{gateway}")
@@ -124,7 +133,7 @@ public class PaymentController {
     // ==================== CREATE ====================
 
     @PostMapping
-    public ResponseEntity<PaymentResponse> create(@Valid @RequestBody PaymentCreateRequest req) {
+    public ResponseEntity<?> create(@Valid @RequestBody PaymentCreateRequest req) {
         // Idempotency check
         if (req.idempotencyKey() != null) {
             Optional<Payment> existingPayment = paymentAdapter.findByIdempotencyKey(req.idempotencyKey());
@@ -133,9 +142,21 @@ public class PaymentController {
             }
         }
 
-        // Resolve relationships
-        Order order = req.orderId() != null ? orderPort.findById(req.orderId()).orElse(null) : null;
-        Customer customer = req.customerId() != null ? customerPort.findById(req.customerId()).orElse(null) : null;
+        // Resolve relationships with validation
+        Order order = null;
+        if (req.orderId() != null) {
+            order = orderPort.findById(req.orderId()).orElse(null);
+            if (order == null)
+                return ResponseEntity.badRequest().body(Map.of("error", "Order not found: " + req.orderId()));
+        }
+
+        Customer customer = null;
+        if (req.customerId() != null) {
+            customer = customerPort.findById(req.customerId()).orElse(null);
+            if (customer == null)
+                return ResponseEntity.badRequest().body(Map.of("error", "Customer not found: " + req.customerId()));
+        }
+
         Vendor vendor = req.vendorId() != null ? vendorPort.findById(req.vendorId()).orElse(null) : null;
 
         Payment payment = req.toDomain(order, customer, vendor);
@@ -160,20 +181,27 @@ public class PaymentController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<PaymentResponse> updateStatus(@PathVariable @Min(1) Long id,
-                                                        @RequestBody java.util.Map<String, String> body) {
+    public ResponseEntity<?> updateStatus(@PathVariable @Min(1) Long id,
+                                          @RequestBody Map<String, String> body) {
         String statusStr = body.get("status");
         String reason = body.get("reason");
         if (statusStr == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", "status field is required"));
         }
-        Payment.PaymentStatus status = Payment.PaymentStatus.valueOf(statusStr);
+        Payment.PaymentStatus status;
+        try {
+            status = Payment.PaymentStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid status '" + statusStr + "'. Valid values: " +
+                            Arrays.toString(Payment.PaymentStatus.values())));
+        }
         return paymentAdapter.findById(id)
                 .map(existing -> {
                     existing.setStatus(status);
                     if (reason != null) existing.setStatusReason(reason);
                     Payment updated = paymentAdapter.save(existing);
-                    return ResponseEntity.ok(PaymentResponse.from(updated));
+                    return ResponseEntity.<Object>ok(PaymentResponse.from(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -181,21 +209,21 @@ public class PaymentController {
     // ==================== PAYMENT ACTIONS ====================
 
     @PostMapping("/{id}/process")
-    public ResponseEntity<PaymentResponse> processPayment(@PathVariable @Min(1) Long id) {
+    public ResponseEntity<?> processPayment(@PathVariable @Min(1) Long id) {
         return paymentAdapter.findById(id)
                 .map(payment -> {
                     if (payment.getStatus() != Payment.PaymentStatus.PENDING) {
-                        return ResponseEntity.badRequest().<PaymentResponse>build();
+                        return ResponseEntity.badRequest().<Object>body(Map.of(
+                                "error", "Payment cannot be processed in status: " + payment.getStatus() +
+                                        ". Expected: PENDING"));
                     }
 
-                    // Increment attempt count
                     payment.setAttemptCount(payment.getAttemptCount() != null ? payment.getAttemptCount() + 1 : 1);
                     payment.setLastAttemptAt(LocalDateTime.now());
                     payment.setStatus(Payment.PaymentStatus.PROCESSING);
                     paymentAdapter.save(payment);
 
                     // TODO: Integrate with actual payment gateway (Stripe/CMI)
-                    // For now, simulate successful payment
                     payment.setStatus(Payment.PaymentStatus.COMPLETED);
                     payment.setGatewayPaymentId("PAY-" + System.currentTimeMillis());
                     payment.setGatewayChargeId("CHG-" + System.currentTimeMillis());
@@ -203,17 +231,19 @@ public class PaymentController {
                     payment.setCapturedAt(LocalDateTime.now());
 
                     Payment updated = paymentAdapter.save(payment);
-                    return ResponseEntity.ok(PaymentResponse.from(updated));
+                    return ResponseEntity.<Object>ok(PaymentResponse.from(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{id}/capture")
-    public ResponseEntity<PaymentResponse> capturePayment(@PathVariable @Min(1) Long id) {
+    public ResponseEntity<?> capturePayment(@PathVariable @Min(1) Long id) {
         return paymentAdapter.findById(id)
                 .map(payment -> {
                     if (payment.getStatus() != Payment.PaymentStatus.AUTHORIZED) {
-                        return ResponseEntity.badRequest().<PaymentResponse>build();
+                        return ResponseEntity.badRequest().<Object>body(Map.of(
+                                "error", "Payment cannot be captured in status: " + payment.getStatus() +
+                                        ". Expected: AUTHORIZED"));
                     }
 
                     // TODO: Call gateway to capture
@@ -221,19 +251,20 @@ public class PaymentController {
                     payment.setCapturedAt(LocalDateTime.now());
 
                     Payment updated = paymentAdapter.save(payment);
-                    return ResponseEntity.ok(PaymentResponse.from(updated));
+                    return ResponseEntity.<Object>ok(PaymentResponse.from(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<PaymentResponse> cancelPayment(@PathVariable @Min(1) Long id,
-                                                         @RequestBody(required = false) java.util.Map<String, String> body) {
+    public ResponseEntity<?> cancelPayment(@PathVariable @Min(1) Long id,
+                                           @RequestBody(required = false) Map<String, String> body) {
         return paymentAdapter.findById(id)
                 .map(payment -> {
                     if (payment.getStatus() == Payment.PaymentStatus.COMPLETED ||
                         payment.getStatus() == Payment.PaymentStatus.REFUNDED) {
-                        return ResponseEntity.badRequest().<PaymentResponse>build();
+                        return ResponseEntity.badRequest().<Object>body(Map.of(
+                                "error", "Cannot cancel payment in status: " + payment.getStatus()));
                     }
 
                     payment.setStatus(Payment.PaymentStatus.CANCELLED);
@@ -242,7 +273,7 @@ public class PaymentController {
                     }
 
                     Payment updated = paymentAdapter.save(payment);
-                    return ResponseEntity.ok(PaymentResponse.from(updated));
+                    return ResponseEntity.<Object>ok(PaymentResponse.from(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -250,40 +281,41 @@ public class PaymentController {
     /**
      * Mark payment as given up after exhausting all retries.
      * Called by BPM when max retry attempts reached.
-     * User can still try again with a different card/method (new Payment record).
      */
     @PostMapping("/{id}/giveup")
-    public ResponseEntity<PaymentResponse> giveupPayment(@PathVariable @Min(1) Long id,
-                                                          @RequestBody(required = false) java.util.Map<String, String> body) {
+    public ResponseEntity<?> giveupPayment(@PathVariable @Min(1) Long id,
+                                           @RequestBody(required = false) Map<String, String> body) {
         return paymentAdapter.findById(id)
                 .map(payment -> {
-                    // Only allow giveup on failed or pending payments
                     if (payment.getStatus() == Payment.PaymentStatus.COMPLETED ||
                         payment.getStatus() == Payment.PaymentStatus.REFUNDED ||
                         payment.getStatus() == Payment.PaymentStatus.ABANDONED) {
-                        return ResponseEntity.badRequest().<PaymentResponse>build();
+                        return ResponseEntity.badRequest().<Object>body(Map.of(
+                                "error", "Cannot give up payment in status: " + payment.getStatus()));
                     }
 
                     payment.setStatus(Payment.PaymentStatus.ABANDONED);
-                    payment.setNextRetryAt(null);  // No more retries
+                    payment.setNextRetryAt(null);
                     if (body != null && body.get("reason") != null) {
                         payment.setStatusReason(body.get("reason"));
                     }
 
                     Payment updated = paymentAdapter.save(payment);
-                    return ResponseEntity.ok(PaymentResponse.from(updated));
+                    return ResponseEntity.<Object>ok(PaymentResponse.from(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{id}/refund")
-    public ResponseEntity<PaymentResponse> refundPayment(@PathVariable @Min(1) Long id,
-                                                         @RequestBody java.util.Map<String, Object> body) {
+    public ResponseEntity<?> refundPayment(@PathVariable @Min(1) Long id,
+                                           @RequestBody Map<String, Object> body) {
         return paymentAdapter.findById(id)
                 .map(payment -> {
                     if (payment.getStatus() != Payment.PaymentStatus.COMPLETED &&
                         payment.getStatus() != Payment.PaymentStatus.CAPTURED) {
-                        return ResponseEntity.badRequest().<PaymentResponse>build();
+                        return ResponseEntity.badRequest().<Object>body(Map.of(
+                                "error", "Cannot refund payment in status: " + payment.getStatus() +
+                                        ". Expected: COMPLETED or CAPTURED"));
                     }
 
                     String reason = body.get("reason") != null ? body.get("reason").toString() : null;
@@ -292,7 +324,6 @@ public class PaymentController {
                             ? new java.math.BigDecimal(amountObj.toString())
                             : payment.getAmount();
 
-                    // Create refund record
                     Payment refund = new Payment();
                     refund.setParentPayment(payment);
                     refund.setOrder(payment.getOrder());
@@ -310,7 +341,6 @@ public class PaymentController {
                     if (reason != null) refund.setStatusReason(reason);
                     paymentAdapter.save(refund);
 
-                    // Update original payment
                     payment.setRefundedAmount(refundAmount);
                     payment.setRefundReason(reason);
                     payment.setRefundDate(LocalDateTime.now());
@@ -319,7 +349,7 @@ public class PaymentController {
                             : Payment.PaymentStatus.PARTIALLY_REFUNDED);
 
                     Payment updated = paymentAdapter.save(payment);
-                    return ResponseEntity.ok(PaymentResponse.from(updated));
+                    return ResponseEntity.<Object>ok(PaymentResponse.from(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -327,13 +357,20 @@ public class PaymentController {
     // ==================== VENDOR PAYOUT ====================
 
     @PatchMapping("/{id}/payout-status")
-    public ResponseEntity<PaymentResponse> updatePayoutStatus(@PathVariable @Min(1) Long id,
-                                                              @RequestBody java.util.Map<String, String> body) {
+    public ResponseEntity<?> updatePayoutStatus(@PathVariable @Min(1) Long id,
+                                                @RequestBody Map<String, String> body) {
         String statusStr = body.get("status");
         if (statusStr == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", "status field is required"));
         }
-        Payment.PayoutStatus payoutStatus = Payment.PayoutStatus.valueOf(statusStr);
+        Payment.PayoutStatus payoutStatus;
+        try {
+            payoutStatus = Payment.PayoutStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid payout status '" + statusStr + "'. Valid values: " +
+                            Arrays.toString(Payment.PayoutStatus.values())));
+        }
         return paymentAdapter.findById(id)
                 .map(existing -> {
                     existing.setVendorPayoutStatus(payoutStatus);
@@ -344,7 +381,7 @@ public class PaymentController {
                         existing.setVendorPayoutDate(LocalDateTime.now());
                     }
                     Payment updated = paymentAdapter.save(existing);
-                    return ResponseEntity.ok(PaymentResponse.from(updated));
+                    return ResponseEntity.<Object>ok(PaymentResponse.from(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -363,57 +400,36 @@ public class PaymentController {
     // ==================== HELPER METHODS ====================
 
     private void applyUpdates(Payment existing, PaymentUpdateRequest req) {
-        // Status
         if (req.status() != null) existing.setStatus(req.status());
         if (req.statusReason() != null) existing.setStatusReason(req.statusReason());
-
-        // Gateway response
         if (req.gatewayPaymentId() != null) existing.setGatewayPaymentId(req.gatewayPaymentId());
         if (req.gatewayChargeId() != null) existing.setGatewayChargeId(req.gatewayChargeId());
         if (req.gatewayResponseCode() != null) existing.setGatewayResponseCode(req.gatewayResponseCode());
         if (req.gatewayResponseMessage() != null) existing.setGatewayResponseMessage(req.gatewayResponseMessage());
-
-        // Card details
         if (req.cardBrand() != null) existing.setCardBrand(req.cardBrand());
         if (req.cardLastFour() != null) existing.setCardLastFour(req.cardLastFour());
         if (req.cardExpMonth() != null) existing.setCardExpMonth(req.cardExpMonth());
         if (req.cardExpYear() != null) existing.setCardExpYear(req.cardExpYear());
         if (req.cardHolderName() != null) existing.setCardHolderName(req.cardHolderName());
         if (req.cardFingerprint() != null) existing.setCardFingerprint(req.cardFingerprint());
-
-        // 3D Secure
         if (req.authStatus() != null) existing.setAuthStatus(req.authStatus());
         if (req.authValue() != null) existing.setAuthValue(req.authValue());
         if (req.authEci() != null) existing.setAuthEci(req.authEci());
-
-        // Vendor payout
         if (req.vendorPayoutStatus() != null) existing.setVendorPayoutStatus(req.vendorPayoutStatus());
         if (req.vendorPayoutReference() != null) existing.setVendorPayoutReference(req.vendorPayoutReference());
         if (req.vendorPayoutDate() != null) existing.setVendorPayoutDate(req.vendorPayoutDate());
-
-        // Refund
         if (req.refundedAmount() != null) existing.setRefundedAmount(req.refundedAmount());
         if (req.refundReason() != null) existing.setRefundReason(req.refundReason());
         if (req.refundDate() != null) existing.setRefundDate(req.refundDate());
-
-        // Settlement
         if (req.settlementStatus() != null) existing.setSettlementStatus(req.settlementStatus());
         if (req.settlementReference() != null) existing.setSettlementReference(req.settlementReference());
         if (req.settlementDate() != null) existing.setSettlementDate(req.settlementDate());
-
-        // Fraud
         if (req.riskScore() != null) existing.setRiskScore(req.riskScore());
         if (req.fraudStatus() != null) existing.setFraudStatus(req.fraudStatus());
         if (req.fraudReason() != null) existing.setFraudReason(req.fraudReason());
-
-        // Receipt
         if (req.receiptUrl() != null) existing.setReceiptUrl(req.receiptUrl());
-
-        // Notes
         if (req.internalNotes() != null) existing.setInternalNotes(req.internalNotes());
         if (req.failureReason() != null) existing.setFailureReason(req.failureReason());
-
-        // Processing
         if (req.processedBy() != null) existing.setProcessedBy(req.processedBy());
         if (req.processedAt() != null) existing.setProcessedAt(req.processedAt());
         if (req.capturedAt() != null) existing.setCapturedAt(req.capturedAt());

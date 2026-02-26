@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.souk.common.domain.Customer;
 import com.souk.common.domain.Address;
 import com.souk.common.domain.Order;
+import com.souk.common.domain.Product;
 import com.souk.common.port.DataAccessPort;
 import com.souk.order.api.dto.OrderCreateRequest;
 import com.souk.order.api.dto.OrderUpdateRequest;
@@ -41,6 +42,9 @@ public class OrderControllerTest {
 
         @MockitoBean
         private DataAccessPort<Address, Long> addressPort;
+
+        @MockitoBean
+        private DataAccessPort<Product, Long> productPort;
 
         @Autowired
         private ObjectMapper objectMapper;
