@@ -24,7 +24,7 @@ public class OpenApiConfig {
                                 .name("SoukConnect Team")
                                 .email("support@soukconnect.com")))
                 .servers(List.of(
-                        new Server().url("/api").description("API Server")
+                        new Server().url("/").description("API Server")
                 ));
     }
 
