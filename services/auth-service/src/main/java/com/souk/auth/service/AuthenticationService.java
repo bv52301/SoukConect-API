@@ -222,6 +222,9 @@ public class AuthenticationService {
         customer.setEmail(email);
         customer.setPhone(request.getPhone());
 
+        // Save first to generate customer_id before adding addresses
+        customer = customerRepository.save(customer);
+
         // Add address if provided
         if (!isBlank(request.getStreet()) || !isBlank(request.getCity())) {
             Address address = new Address();
@@ -233,11 +236,10 @@ public class AuthenticationService {
             address.setAddressType("HOME");
             address.setDefault(true);
 
-            // Helper method in Customer handles ownerId/Type/UserId setting
             customer.addAddress(address);
+            customerRepository.save(customer);
         }
 
-        customerRepository.save(customer);
         log.info("Customer profile created for user: {}", user.getUserId());
     }
 
@@ -249,6 +251,9 @@ public class AuthenticationService {
         vendor.setContactName(request.getContactName());
         vendor.setEmail(email);
         vendor.setPhoneNumber(request.getPhone());
+
+        // Save first to generate vendor_id before adding addresses
+        vendor = vendorRepository.save(vendor);
 
         // Add primary address if provided
         if (!isBlank(request.getAddress1()) || !isBlank(request.getState())) {
@@ -263,11 +268,10 @@ public class AuthenticationService {
             address.setAddressType("PRIMARY");
             address.setDefault(true);
 
-            // Helper method in Vendor handles ownerId/Type/UserId setting
             vendor.addAddress(address);
+            vendorRepository.save(vendor);
         }
 
-        vendorRepository.save(vendor);
         log.info("Vendor profile created for user: {}", user.getUserId());
     }
 
