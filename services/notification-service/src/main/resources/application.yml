@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:soukconect}
+    username: ${DB_USERNAME:soukconect}
+    password: ${DB_PASSWORD:soukconect}
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+
+server:
+  port: ${SERVER_PORT:8086}
+
+# Temporal — for signalling back to NotificationWorkflow
+temporal:
+  server:
+    address: ${TEMPORAL_ADDRESS:localhost:7233}
+  namespace: ${TEMPORAL_NAMESPACE:default}
+
+# Push provider (FCM / APNs)
+push:
+  provider: ${PUSH_PROVIDER:fcm}
+  fcm:
+    server-key: ${PUSH_FCM_SERVER_KEY:}
+  apns:
+    key-id: ${PUSH_APNS_KEY_ID:}
+    team-id: ${PUSH_APNS_TEAM_ID:}
+    private-key: ${PUSH_APNS_PRIVATE_KEY:}
+    bundle-id: ${PUSH_APNS_BUNDLE_ID:}
+
+# Email provider (SMTP)
+mail:
+  host: ${MAIL_HOST:smtp.gmail.com}
+  port: ${MAIL_PORT:587}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+  from: ${MAIL_FROM:noreply@soukconect.com}
+
+# SMS provider (Twilio / Vonage)
+sms:
+  provider: ${SMS_PROVIDER:twilio}
+  twilio:
+    account-sid: ${SMS_TWILIO_ACCOUNT_SID:}
+    auth-token: ${SMS_TWILIO_AUTH_TOKEN:}
+    from-number: ${SMS_TWILIO_FROM_NUMBER:}
+  vonage:
+    api-key: ${SMS_VONAGE_API_KEY:}
+    api-secret: ${SMS_VONAGE_API_SECRET:}
+    from-number: ${SMS_VONAGE_FROM_NUMBER:}
+
+logging:
+  level:
+    root: INFO
+    com.souk.notification: DEBUG
+    io.temporal: INFO
